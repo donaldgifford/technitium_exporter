@@ -19,7 +19,7 @@ jobs:
     name: Label PR
     steps:
       - name: Checkout code
-        uses: actions/labeler@v5
+        uses: actions/labeler@v6
   lint:
     name: Lint
     runs-on: ubuntu-latest
