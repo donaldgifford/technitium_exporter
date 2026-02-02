@@ -11,6 +11,15 @@ permissions:
   contents: read
 
 jobs:
+  labeler:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    name: Label PR
+    steps:
+      - name: Checkout code
+        uses: actions/labeler@v5
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -89,7 +98,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y lintian
 
       - name: Run lintian on deb package
-        run: |
+        run: |-
           echo "Running lintian on amd64 package..."
           lintian --no-cfg dist/technitium-exporter_*_amd64.deb
           echo "Lintian check passed (warnings are acceptable)"
