@@ -1,0 +1,10 @@
+---
+debug: false
+conventional-commits: true
+exclude-merge-commits: true
+owner: "donaldgifford"
+package-name: "technitium-exporter"
+deb:
+  distribution:
+    - stable
+  urgency: low

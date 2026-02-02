@@ -1,0 +1,12 @@
+# Configuration for technitium_exporter
+# This file is sourced by the systemd service
+
+# Required: Technitium server URL
+TECHNITIUM_URL="http://127.0.0.1:5380"
+
+# Required: Technitium API token
+TECHNITIUM_TOKEN=""
+
+# Optional: Additional command line options
+# Example: TECHNITIUM_EXPORTER_OPTS="--web.listen-address=:9167 --log.level=info"
+TECHNITIUM_EXPORTER_OPTS=""
