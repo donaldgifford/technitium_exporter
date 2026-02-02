@@ -1,0 +1,90 @@
+---
+version: 2
+project_name: technitium_exporter
+
+builds:
+  - id: technitium_exporter
+    binary: technitium_exporter
+    main: ./cmd/technitium_exporter/main.go
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - "7"
+
+checksum:
+  name_template: 'checksums.txt'
+
+signs:
+  - artifacts: checksum
+    args:
+      - "--batch"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: "^feat:"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^fix:"
+      order: 1
+    - title: Others
+      order: 999
+
+archives:
+  - formats: ["tar.gz"]
+    name_template: >-
+      {{ .ProjectName }}-v{{ .Version }}- {{- .Os }}- {{- if eq .Arch "amd64" }}x86_64 {{- else if eq .Arch "386" }}i386 {{-
+      else }}{{ .Arch }}{{ end }} {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: zip
+
+release:
+  name_template: 'Release {{.Tag}}'
+  github:
+    owner: donaldgifford
+    name: technitium_exporter
+  draft: true
+  prerelease: auto
+  mode: prepend
+  header: |
+    ## Release {{ .Tag }} ({{ .Date }})
+
+    ### Installation
+
+    #### Linux/macOS (Manual)
+    ```bash
+    # Download the appropriate binary for your system
+    # Extract and move to your PATH
+    tar -xzf technitium_exporter_*.tar.gz
+    ```
+
+  footer: |
+    ---
+    **Full Changelog**: https://github.com/donaldgifford/technitium_exporter/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+snapshot:
+  version_template: "{{ .Tag }}-dev"
