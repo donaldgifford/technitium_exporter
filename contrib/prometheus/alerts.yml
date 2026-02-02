@@ -1,0 +1,98 @@
+groups:
+  - name: technitium_exporter
+    rules:
+      # Exporter health
+      - alert: TechnitiumExporterDown
+        expr: up{job="technitium"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Technitium exporter is down"
+          description: "Technitium exporter has been unreachable for more than 5 minutes."
+
+      - alert: TechnitiumServerDown
+        expr: technitium_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Technitium DNS server is unreachable"
+          description: "The exporter cannot reach the Technitium DNS server API."
+
+      # DNS query alerts
+      - alert: TechnitiumHighServerFailureRate
+        expr: |
+          rate(technitium_responses_total{rcode="servfail"}[5m])
+          / rate(technitium_queries_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High SERVFAIL rate on Technitium DNS"
+          description: "More than 5% of DNS queries are returning SERVFAIL."
+
+      - alert: TechnitiumHighNXDomainRate
+        expr: |
+          rate(technitium_responses_total{rcode="nxdomain"}[5m])
+          / rate(technitium_queries_total[5m]) > 0.30
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High NXDOMAIN rate on Technitium DNS"
+          description: "More than 30% of DNS queries are returning NXDOMAIN. This could indicate misconfiguration or malicious activity."
+
+      - alert: TechnitiumHighRefusedRate
+        expr: |
+          rate(technitium_responses_total{rcode="refused"}[5m])
+          / rate(technitium_queries_total[5m]) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High REFUSED rate on Technitium DNS"
+          description: "More than 10% of DNS queries are being refused."
+
+      # Blocking alerts
+      - alert: TechnitiumHighBlockRate
+        expr: |
+          rate(technitium_queries_by_type_total{type="blocked"}[5m])
+          / rate(technitium_queries_total[5m]) > 0.50
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: "High DNS block rate"
+          description: "More than 50% of DNS queries are being blocked. This may be expected depending on your blocklist configuration."
+
+      - alert: TechnitiumBlocklistEmpty
+        expr: technitium_blocklist_domains == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Technitium blocklist is empty"
+          description: "No domains are loaded in the blocklist. Check blocklist configuration."
+
+      # Cache alerts
+      - alert: TechnitiumLowCacheHitRate
+        expr: |
+          rate(technitium_queries_by_type_total{type="cached"}[5m])
+          / rate(technitium_queries_total[5m]) < 0.20
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low DNS cache hit rate"
+          description: "Cache hit rate is below 20%. This may indicate cache sizing issues or unusual query patterns."
+
+      # Scrape performance
+      - alert: TechnitiumSlowScrape
+        expr: technitium_scrape_duration_seconds > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Technitium exporter scrape is slow"
+          description: "Scraping Technitium API is taking more than 5 seconds. Check network connectivity or server load."

@@ -1,0 +1,22 @@
+[Unit]
+Description=Prometheus exporter for Technitium DNS Server
+Documentation=https://github.com/donaldgifford/technitium_exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=technitium_exporter
+Group=technitium_exporter
+EnvironmentFile=-/etc/default/technitium_exporter
+ExecStart=/usr/bin/technitium_exporter $TECHNITIUM_EXPORTER_OPTS
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+
+[Install]
+WantedBy=multi-user.target
