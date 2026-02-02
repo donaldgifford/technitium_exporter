@@ -1,0 +1,5 @@
+# Lintian overrides for technitium-exporter
+#
+# statically-linked-binary: Expected for Go binaries built with CGO_ENABLED=0
+# This is intentional for portability across Linux distributions.
+technitium-exporter: statically-linked-binary [usr/bin/technitium_exporter]

@@ -62,6 +62,49 @@ archives:
       - goos: windows
         formats: zip
 
+nfpms:
+  - id: technitium_exporter
+    package_name: technitium-exporter
+    file_name_template: "{{ .ConventionalFileName }}"
+    vendor: Donald Gifford
+    homepage: https://github.com/donaldgifford/technitium_exporter
+    maintainer: Donald Gifford <dgifford@pm.me>
+    description: |-
+      Prometheus exporter for Technitium DNS Server.
+      Exposes DNS query statistics, cache metrics, blocking stats,
+      and server information in Prometheus format. Lightweight and
+      suitable for Raspberry Pi and other ARM64/AMD64 systems.
+    license: Apache-2.0
+    formats:
+      - deb
+    bindir: /usr/bin
+    section: net
+    priority: optional
+    changelog: changelog.yml
+    contents:
+      # Systemd service file (not a conffile - it's not in /etc)
+      - src: deploy/deb/systemd/technitium_exporter.service
+        dst: /lib/systemd/system/technitium_exporter.service
+      # Default environment file (conffile - preserved on upgrade)
+      - src: deploy/deb/default/technitium_exporter
+        dst: /etc/default/technitium_exporter
+        type: config|noreplace
+      # Copyright file (required by Debian policy)
+      - src: deploy/deb/copyright
+        dst: /usr/share/doc/technitium-exporter/copyright
+      # Lintian overrides (suppress expected warnings for Go binaries)
+      - src: deploy/deb/lintian-overrides
+        dst: /usr/share/lintian/overrides/technitium-exporter
+        file_info:
+          mode: 0644
+    scripts:
+      postinstall: deploy/deb/scripts/postinstall.sh
+      preremove: deploy/deb/scripts/preremove.sh
+    overrides:
+      deb:
+        dependencies:
+          - systemd
+
 release:
   name_template: 'Release {{.Tag}}'
   github:

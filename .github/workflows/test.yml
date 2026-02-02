@@ -65,3 +65,31 @@ jobs:
         with:
           version: "~> v2"
           args: build --snapshot --clean
+
+  package-lint:
+    name: Package Lint (Debian)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build deb packages
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --snapshot --clean --skip=publish,sign
+
+      - name: Install lintian
+        run: sudo apt-get update && sudo apt-get install -y lintian
+
+      - name: Run lintian on deb package
+        run: |
+          echo "Running lintian on amd64 package..."
+          lintian --no-cfg dist/technitium-exporter_*_amd64.deb
+          echo "Lintian check passed (warnings are acceptable)"
