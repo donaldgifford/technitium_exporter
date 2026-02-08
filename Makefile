@@ -44,6 +44,7 @@ TECHNITIUM_TOKEN := "a69a978f1f3b38dd2c59d2923fa97c4595bbd02f2469e52f4181a673b56
 .PHONY: lint lint-fix fmt clean
 .PHONY: run run-local test-api ci check
 .PHONY: release-check release-local
+.PHONY: govulncheck trivy syft security
 
 ## Build Targets
 
@@ -97,6 +98,7 @@ clean: ## Remove build artifacts
 	@ $(MAKE) --no-print-directory log-$@
 	@rm -rf $(BIN_DIR)/
 	@rm -f $(COVERAGE_OUT)
+	@rm -f $(BUILD_DIR)/sbom.*.json
 	@go clean -cache
 	@find . -name "*.test" -delete
 	@echo "✓ Build artifacts cleaned"
@@ -148,6 +150,28 @@ release-check:
 release-local: ## Test goreleaser without publishing
 	@ $(MAKE) --no-print-directory log-$@
 	goreleaser release --snapshot --clean --skip=publish --skip=sign
+
+
+###############
+##@ Security
+
+govulncheck: ## Run Go vulnerability check (source-level, call-graph aware)
+	@ $(MAKE) --no-print-directory log-$@
+	@govulncheck ./...
+
+trivy: ## Scan dependencies for known vulnerabilities
+	@ $(MAKE) --no-print-directory log-$@
+	@trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .
+
+syft: ## Generate SBOM for the project source
+	@ $(MAKE) --no-print-directory log-$@
+	@mkdir -p $(BUILD_DIR)
+	@syft dir:. --output spdx-json=$(BUILD_DIR)/sbom.spdx.json --output cyclonedx-json=$(BUILD_DIR)/sbom.cdx.json
+	@echo "✓ SBOMs generated in $(BUILD_DIR)/"
+
+security: govulncheck trivy ## Run all security checks
+	@ $(MAKE) --no-print-directory log-$@
+	@echo "✓ All security checks passed"
 
 
 ########################################################################
