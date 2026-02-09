@@ -46,7 +46,20 @@ func realWorldStatsJSON() string {
 				"allowedZones": 0,
 				"blockedZones": 0,
 				"blockListZones": 214040
-			}
+			},
+			"queryTypeChartData": {"A": 40, "AAAA": 25, "PTR": 5, "TXT": 2},
+			"protocolTypeChartData": {"UDP": 65, "TCP": 7},
+			"topClients": [
+				{"name": "10.10.11.18", "hits": 50, "rateLimited": false},
+				{"name": "10.10.11.1", "hits": 22, "rateLimited": false}
+			],
+			"topDomains": [
+				{"name": "dns03.fartlab.dev", "hits": 30},
+				{"name": "example.com", "hits": 15}
+			],
+			"topBlockedDomains": [
+				{"name": "ads.example.com", "hits": 8}
+			]
 		}
 	}`
 }
@@ -74,7 +87,21 @@ func highTrafficStatsJSON() string {
 				"allowedZones": 5,
 				"blockedZones": 12,
 				"blockListZones": 500000
-			}
+			},
+			"queryTypeChartData": {"A": 800000, "AAAA": 500000, "TXT": 100000, "HTTPS": 50000, "PTR": 30000, "SRV": 2000},
+			"protocolTypeChartData": {"UDP": 1400000, "TCP": 123456},
+			"topClients": [
+				{"name": "10.0.0.1", "hits": 250000, "rateLimited": false},
+				{"name": "10.0.0.2", "hits": 180000, "rateLimited": true}
+			],
+			"topDomains": [
+				{"name": "api.github.com", "hits": 50000},
+				{"name": "dns.google", "hits": 30000}
+			],
+			"topBlockedDomains": [
+				{"name": "stats.grafana.org", "hits": 25000},
+				{"name": "telemetry.example.com", "hits": 15000}
+			]
 		}
 	}`
 }
@@ -131,10 +158,9 @@ func TestCollector_Collect_RealWorldData(t *testing.T) {
 		metricCount++
 	}
 
-	// We expect: up, scrapeDuration, serverInfo, queriesTotal, 4 responsesTotal, 5 queriesByType,
-	// blockedTotal, blocklistDomains, blockedZones, allowedZones, cacheEntries, clients, zones,
-	// uptimeSeconds = 21 metrics (no chart data in fixture yet).
-	expectedMetrics := 21
+	// We expect: 20 original + 4 queryTypeChartData + 2 protocolTypeChartData +
+	// 2 topClients + 2 topDomains + 1 topBlockedDomains + 1 uptimeSeconds = 32.
+	expectedMetrics := 32
 	if metricCount != expectedMetrics {
 		t.Errorf("expected %d metrics, got %d", expectedMetrics, metricCount)
 	}
@@ -420,6 +446,173 @@ func TestCollector_JSONParsing(t *testing.T) {
 	}
 }
 
+func TestCollector_QueriesByRecordType(t *testing.T) {
+	server := newTestServer(highTrafficStatsJSON(), realWorldSettingsJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), true)
+
+	expected := `
+		# HELP technitium_queries_by_record_type_total DNS queries by record type (A, AAAA, TXT, etc.).
+		# TYPE technitium_queries_by_record_type_total counter
+		technitium_queries_by_record_type_total{record_type="A"} 800000
+		technitium_queries_by_record_type_total{record_type="AAAA"} 500000
+		technitium_queries_by_record_type_total{record_type="HTTPS"} 50000
+		technitium_queries_by_record_type_total{record_type="PTR"} 30000
+		technitium_queries_by_record_type_total{record_type="SRV"} 2000
+		technitium_queries_by_record_type_total{record_type="TXT"} 100000
+	`
+	if err := testutil.CollectAndCompare(coll, strings.NewReader(expected), "technitium_queries_by_record_type_total"); err != nil {
+		t.Errorf("unexpected metrics for technitium_queries_by_record_type_total: %v", err)
+	}
+}
+
+func TestCollector_QueriesByProtocol(t *testing.T) {
+	server := newTestServer(highTrafficStatsJSON(), realWorldSettingsJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), true)
+
+	expected := `
+		# HELP technitium_queries_by_protocol_total DNS queries by transport protocol.
+		# TYPE technitium_queries_by_protocol_total counter
+		technitium_queries_by_protocol_total{protocol="tcp"} 123456
+		technitium_queries_by_protocol_total{protocol="udp"} 1.4e+06
+	`
+	if err := testutil.CollectAndCompare(coll, strings.NewReader(expected), "technitium_queries_by_protocol_total"); err != nil {
+		t.Errorf("unexpected metrics for technitium_queries_by_protocol_total: %v", err)
+	}
+}
+
+func TestCollector_TopClients(t *testing.T) {
+	server := newTestServer(highTrafficStatsJSON(), realWorldSettingsJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), true)
+
+	expected := `
+		# HELP technitium_top_clients_hits Top clients by query count.
+		# TYPE technitium_top_clients_hits gauge
+		technitium_top_clients_hits{client="10.0.0.1",rate_limited="false"} 250000
+		technitium_top_clients_hits{client="10.0.0.2",rate_limited="true"} 180000
+	`
+	if err := testutil.CollectAndCompare(coll, strings.NewReader(expected), "technitium_top_clients_hits"); err != nil {
+		t.Errorf("unexpected metrics for technitium_top_clients_hits: %v", err)
+	}
+}
+
+func TestCollector_TopDomains(t *testing.T) {
+	server := newTestServer(highTrafficStatsJSON(), realWorldSettingsJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), true)
+
+	expected := `
+		# HELP technitium_top_domains_hits Top queried domains by hit count.
+		# TYPE technitium_top_domains_hits gauge
+		technitium_top_domains_hits{domain="api.github.com"} 50000
+		technitium_top_domains_hits{domain="dns.google"} 30000
+	`
+	if err := testutil.CollectAndCompare(coll, strings.NewReader(expected), "technitium_top_domains_hits"); err != nil {
+		t.Errorf("unexpected metrics for technitium_top_domains_hits: %v", err)
+	}
+}
+
+func TestCollector_TopBlockedDomains(t *testing.T) {
+	server := newTestServer(highTrafficStatsJSON(), realWorldSettingsJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), true)
+
+	expected := `
+		# HELP technitium_top_blocked_domains_hits Top blocked domains by hit count.
+		# TYPE technitium_top_blocked_domains_hits gauge
+		technitium_top_blocked_domains_hits{domain="stats.grafana.org"} 25000
+		technitium_top_blocked_domains_hits{domain="telemetry.example.com"} 15000
+	`
+	if err := testutil.CollectAndCompare(coll, strings.NewReader(expected), "technitium_top_blocked_domains_hits"); err != nil {
+		t.Errorf("unexpected metrics for technitium_top_blocked_domains_hits: %v", err)
+	}
+}
+
+func TestCollector_TopEntriesDisabled(t *testing.T) {
+	server := newTestServer(highTrafficStatsJSON(), realWorldSettingsJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), false)
+
+	// Verify descriptor count is 16 (19 - 3 top-entry descriptors).
+	descCh := make(chan *prometheus.Desc, 100)
+	coll.Describe(descCh)
+	close(descCh)
+
+	descCount := 0
+	for range descCh {
+		descCount++
+	}
+	if descCount != 16 {
+		t.Errorf("expected 16 descriptors with top entries disabled, got %d", descCount)
+	}
+
+	// Verify top_clients, top_domains, top_blocked_domains are NOT emitted.
+	metricCount := testutil.CollectAndCount(coll, "technitium_top_clients_hits")
+	if metricCount != 0 {
+		t.Errorf("expected 0 top_clients metrics when disabled, got %d", metricCount)
+	}
+	metricCount = testutil.CollectAndCount(coll, "technitium_top_domains_hits")
+	if metricCount != 0 {
+		t.Errorf("expected 0 top_domains metrics when disabled, got %d", metricCount)
+	}
+	metricCount = testutil.CollectAndCount(coll, "technitium_top_blocked_domains_hits")
+	if metricCount != 0 {
+		t.Errorf("expected 0 top_blocked_domains metrics when disabled, got %d", metricCount)
+	}
+
+	// Verify record_type and protocol metrics ARE still emitted.
+	metricCount = testutil.CollectAndCount(coll, "technitium_queries_by_record_type_total")
+	if metricCount == 0 {
+		t.Error("expected queries_by_record_type metrics when top entries disabled, got 0")
+	}
+	metricCount = testutil.CollectAndCount(coll, "technitium_queries_by_protocol_total")
+	if metricCount == 0 {
+		t.Error("expected queries_by_protocol metrics when top entries disabled, got 0")
+	}
+}
+
+func TestCollector_UptimeSeconds(t *testing.T) {
+	server := newTestServer(realWorldStatsJSON(), realWorldSettingsJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), true)
+
+	// Uptime should be a positive value (settings has uptimestamp "2024-01-15T10:30:00Z").
+	metricCount := testutil.CollectAndCount(coll, "technitium_server_uptime_seconds")
+	if metricCount != 1 {
+		t.Errorf("expected 1 uptime metric, got %d", metricCount)
+	}
+}
+
+func TestCollector_UptimeSeconds_NoSettings(t *testing.T) {
+	server := newTestServer(realWorldStatsJSON(), errorResponseJSON(), http.StatusOK)
+	defer server.Close()
+
+	client := technitium.NewClient(server.URL, "test-token", testTimeout)
+	coll := NewCollector(client, newTestLogger(), true)
+
+	// Uptime should NOT be emitted when settings endpoint fails.
+	metricCount := testutil.CollectAndCount(coll, "technitium_server_uptime_seconds")
+	if metricCount != 0 {
+		t.Errorf("expected 0 uptime metrics when settings fail, got %d", metricCount)
+	}
+}
+
 // TestStatsResponse_Unmarshal verifies JSON unmarshaling works correctly.
 func TestStatsResponse_Unmarshal(t *testing.T) {
 	jsonData := realWorldStatsJSON()
@@ -439,5 +632,16 @@ func TestStatsResponse_Unmarshal(t *testing.T) {
 	}
 	if resp.Response.Stats.BlockListZones != 214040 {
 		t.Errorf("expected blockListZones 214040, got %d", resp.Response.Stats.BlockListZones)
+	}
+
+	// Verify chart data fields parse correctly.
+	if got := resp.Response.QueryTypeChartData["A"]; got != 40 {
+		t.Errorf("QueryTypeChartData[A] = %v, want 40", got)
+	}
+	if got := len(resp.Response.TopClients); got != 2 {
+		t.Errorf("len(TopClients) = %v, want 2", got)
+	}
+	if got := len(resp.Response.TopBlockedDomains); got != 1 {
+		t.Errorf("len(TopBlockedDomains) = %v, want 1", got)
 	}
 }
