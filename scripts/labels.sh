@@ -39,6 +39,11 @@ declare -A LABEL_COLORS=(
   ["docker"]="0DB7ED"        # Docker blue
   ["feature"]="A2EEEF"       # Light cyan - feature
 
+  # Issue category labels
+  ["security"]="D93F0B"     # Orange - security
+  ["code-quality"]="FBCA04" # Yellow - code quality
+  ["testing"]="BFD4F2"      # Pale blue - testing
+
   # From pr-labels.yml - semver labels
   ["major"]="D73A4A"        # Red - breaking
   ["minor"]="0E8A16"        # Green - feature
@@ -56,6 +61,11 @@ declare -A LABEL_DESCRIPTIONS=(
   ["repo"]="Repository configuration (linters, codecov, etc.)"
   ["docker"]="Docker-related changes (Dockerfile)"
   ["feature"]="New feature or enhancement"
+
+  # Issue category labels
+  ["security"]="Security-related issues"
+  ["code-quality"]="Code quality and idioms"
+  ["testing"]="Test coverage and test improvements"
 
   # From pr-labels.yml
   ["major"]="Breaking changes - increment major version (x.0.0)"
