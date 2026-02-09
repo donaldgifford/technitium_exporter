@@ -4,6 +4,8 @@ package collector
 import (
 	"context"
 	"log/slog"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -191,4 +193,72 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(c.cacheEntries, prometheus.GaugeValue, float64(s.CachedEntries))
 	ch <- prometheus.MustNewConstMetric(c.clients, prometheus.GaugeValue, float64(s.TotalClients))
 	ch <- prometheus.MustNewConstMetric(c.zones, prometheus.GaugeValue, float64(s.Zones))
+
+	// Chart data and top entries.
+	c.collectChartData(ch, stats)
+
+	// Server uptime from settings endpoint.
+	if settingsErr == nil {
+		c.collectUptime(ch, settings)
+	}
+}
+
+// collectChartData emits metrics from the dashboard chart data and top-N lists.
+func (c *Collector) collectChartData(ch chan<- prometheus.Metric, stats *technitium.StatsResponse) {
+	// Query type chart data (A, AAAA, TXT, etc.).
+	for recordType, count := range stats.Response.QueryTypeChartData {
+		ch <- prometheus.MustNewConstMetric(
+			c.queriesByRecordType, prometheus.CounterValue,
+			float64(count), recordType,
+		)
+	}
+
+	// Protocol type chart data (UDP, TCP, etc.).
+	for protocol, count := range stats.Response.ProtocolTypeChartData {
+		ch <- prometheus.MustNewConstMetric(
+			c.queriesByProtocol, prometheus.CounterValue,
+			float64(count), strings.ToLower(protocol),
+		)
+	}
+
+	if !c.topEntriesEnabled {
+		return
+	}
+
+	// Top clients.
+	for _, client := range stats.Response.TopClients {
+		ch <- prometheus.MustNewConstMetric(
+			c.topClients, prometheus.GaugeValue,
+			float64(client.Hits), client.Name,
+			strconv.FormatBool(client.RateLimited),
+		)
+	}
+
+	// Top domains.
+	for _, domain := range stats.Response.TopDomains {
+		ch <- prometheus.MustNewConstMetric(
+			c.topDomains, prometheus.GaugeValue,
+			float64(domain.Hits), domain.Name,
+		)
+	}
+
+	// Top blocked domains.
+	for _, domain := range stats.Response.TopBlockedDomains {
+		ch <- prometheus.MustNewConstMetric(
+			c.topBlockedDomains, prometheus.GaugeValue,
+			float64(domain.Hits), domain.Name,
+		)
+	}
+}
+
+// collectUptime emits the server uptime metric from the settings endpoint.
+func (c *Collector) collectUptime(ch chan<- prometheus.Metric, settings *technitium.SettingsResponse) {
+	startTime, err := time.Parse(time.RFC3339, settings.Response.Uptimestamp)
+	if err != nil {
+		c.logger.Debug("Failed to parse uptimestamp", "err", err)
+		return
+	}
+
+	uptime := time.Since(startTime).Seconds()
+	ch <- prometheus.MustNewConstMetric(c.uptimeSeconds, prometheus.GaugeValue, uptime)
 }

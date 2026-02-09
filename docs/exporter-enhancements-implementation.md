@@ -231,10 +231,10 @@ is a mechanical find-and-replace in `collector/collector_test.go`.
    ```
 
 **Success criteria:**
-- [ ] `go build ./...` compiles
-- [ ] `go vet ./...` passes
-- [ ] `make lint` passes (no new golangci-lint issues)
-- [ ] Existing tests still pass (no new data in fixtures yet, so new loops are
+- [x] `go build ./...` compiles
+- [x] `go vet ./...` passes
+- [x] `make lint` passes (no new golangci-lint issues)
+- [x] Existing tests still pass (no new data in fixtures yet, so new loops are
   no-ops on nil maps/slices)
 
 ---
