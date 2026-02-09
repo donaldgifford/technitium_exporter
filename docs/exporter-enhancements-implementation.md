@@ -152,9 +152,9 @@ collector. Update `NewCollector` signature to accept `topEntries bool`.
    - To: `collector.NewCollector(client, logger, *topEntries)`
 
 **Success criteria:**
-- [ ] `go build ./...` compiles
-- [ ] `go vet ./...` passes
-- [ ] Existing tests compile (will need NewCollector call sites updated -- see
+- [x] `go build ./...` compiles
+- [x] `go vet ./...` passes
+- [x] Existing tests compile (will need NewCollector call sites updated -- see
   note below)
 
 **Note:** All existing test call sites of `NewCollector(client, logger)` will

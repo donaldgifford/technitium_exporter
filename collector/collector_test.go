@@ -118,7 +118,7 @@ func TestCollector_Collect_RealWorldData(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	// Collect metrics.
 	ch := make(chan prometheus.Metric, 100)
@@ -144,7 +144,7 @@ func TestCollector_Collect_HighTrafficServer(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	// Test specific metric values using testutil.
 	expected := `
@@ -162,7 +162,7 @@ func TestCollector_Collect_SettingsAccessDenied(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	// Should still work with version="unknown".
 	expected := `
@@ -190,7 +190,7 @@ func TestCollector_Collect_StatsError(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	ch := make(chan prometheus.Metric, 100)
 	coll.Collect(ch)
@@ -212,7 +212,7 @@ func TestCollector_Collect_StatsHTTPError(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	expected := `
 		# HELP technitium_up Whether the Technitium server is reachable.
@@ -229,7 +229,7 @@ func TestCollector_Collect_BothEndpointsFail(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	expected := `
 		# HELP technitium_up Whether the Technitium server is reachable.
@@ -244,7 +244,7 @@ func TestCollector_Collect_BothEndpointsFail(t *testing.T) {
 func TestCollector_Collect_ServerUnreachable(t *testing.T) {
 	// Use a URL that will fail to connect.
 	client := technitium.NewClient("http://127.0.0.1:1", "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	expected := `
 		# HELP technitium_up Whether the Technitium server is reachable.
@@ -258,7 +258,7 @@ func TestCollector_Collect_ServerUnreachable(t *testing.T) {
 
 func TestCollector_Describe(t *testing.T) {
 	client := technitium.NewClient("http://localhost", "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	ch := make(chan *prometheus.Desc, 100)
 	coll.Describe(ch)
@@ -269,8 +269,8 @@ func TestCollector_Describe(t *testing.T) {
 		descCount++
 	}
 
-	// We expect 13 metric descriptors.
-	expectedDescs := 13
+	// We expect 19 metric descriptors (13 original + 3 chart data + 3 top entries).
+	expectedDescs := 19
 	if descCount != expectedDescs {
 		t.Errorf("expected %d descriptors, got %d", expectedDescs, descCount)
 	}
@@ -281,7 +281,7 @@ func TestCollector_MetricValues_RealWorld(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	// Test queries total.
 	expected := `
@@ -329,7 +329,7 @@ func TestCollector_ResponseCodes(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	expected := `
 		# HELP technitium_responses_total DNS responses by response code.
@@ -349,7 +349,7 @@ func TestCollector_QueryTypes(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	expected := `
 		# HELP technitium_queries_by_type_total DNS queries by resolution type.
@@ -397,7 +397,7 @@ func TestCollector_JSONParsing(t *testing.T) {
 	defer server.Close()
 
 	client := technitium.NewClient(server.URL, "test-token", testTimeout)
-	coll := NewCollector(client, newTestLogger())
+	coll := NewCollector(client, newTestLogger(), true)
 
 	// Verify specific parsed values.
 	expected := `
