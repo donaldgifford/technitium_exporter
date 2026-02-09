@@ -367,11 +367,11 @@ make security
 ```
 
 **Success criteria:**
-- [ ] `make fmt` -- no formatting changes
-- [ ] `make lint` -- clean
-- [ ] `make test-coverage` -- all tests pass with coverage report
-- [ ] `make build` -- binary builds for all platforms
-- [ ] `make security` -- no HIGH/CRITICAL vulnerabilities
+- [x] `make fmt` -- no formatting changes
+- [x] `make lint` -- clean (0 issues)
+- [x] `make test-coverage` -- all tests pass (collector: 97.8%, client: 91.5%)
+- [x] `make build` -- binary builds successfully
+- [x] `make security` -- no vulnerabilities (govulncheck clean, trivy 0 findings)
 - [ ] Manual smoke test: run the built binary against a test server (if
   available) and curl `/metrics` to verify new metrics appear
 

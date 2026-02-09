@@ -108,6 +108,12 @@ client := technitium.NewClient(server.URL, "test-token", timeout)
 | `technitium_cache_entries` | Gauge | Current cache entries |
 | `technitium_clients_total` | Gauge | Unique clients seen |
 | `technitium_zones` | Gauge | Total zones |
+| `technitium_queries_by_record_type_total` | Counter | Queries by DNS record type (A, AAAA, TXT, etc.) |
+| `technitium_queries_by_protocol_total` | Counter | Queries by transport protocol (udp, tcp, etc.) |
+| `technitium_top_clients_hits` | Gauge | Top clients by query count (gated by `--collector.top-entries`) |
+| `technitium_top_domains_hits` | Gauge | Top queried domains by hit count (gated by `--collector.top-entries`) |
+| `technitium_top_blocked_domains_hits` | Gauge | Top blocked domains by hit count (gated by `--collector.top-entries`) |
+| `technitium_server_uptime_seconds` | Gauge | Server uptime in seconds (requires admin token) |
 
 ## Code Style
 
