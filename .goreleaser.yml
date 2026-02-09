@@ -62,6 +62,11 @@ archives:
       - goos: windows
         formats: zip
 
+sboms:
+  - artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.sbom.spdx.json"
+
 nfpms:
   - id: technitium_exporter
     package_name: technitium-exporter
