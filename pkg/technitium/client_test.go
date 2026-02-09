@@ -213,3 +213,158 @@ func TestStatsResponse_JSON(t *testing.T) {
 		t.Errorf("blockListZones = %v, want 50000", resp.Response.Stats.BlockListZones)
 	}
 }
+
+func TestStatsResponse_ChartData(t *testing.T) {
+	jsonData := `{
+		"status": "ok",
+		"response": {
+			"stats": {
+				"totalQueries": 160,
+				"totalNoError": 150,
+				"totalServerFailure": 0,
+				"totalNxDomain": 5,
+				"totalRefused": 5,
+				"totalAuthoritative": 40,
+				"totalRecursive": 100,
+				"totalCached": 15,
+				"totalBlocked": 3,
+				"totalDropped": 2,
+				"totalClients": 5,
+				"zones": 3,
+				"cachedEntries": 200,
+				"allowedZones": 0,
+				"blockedZones": 1,
+				"blockListZones": 50000
+			},
+			"queryTypeChartData": {"A": 100, "AAAA": 40, "TXT": 10, "HTTPS": 5, "PTR": 5},
+			"protocolTypeChartData": {"UDP": 140, "TCP": 20},
+			"topClients": [
+				{"name": "10.0.0.1", "hits": 80, "rateLimited": false},
+				{"name": "10.0.0.2", "hits": 60, "rateLimited": true}
+			],
+			"topDomains": [
+				{"name": "example.com", "hits": 50},
+				{"name": "dns.google", "hits": 30}
+			],
+			"topBlockedDomains": [
+				{"name": "ads.example.com", "hits": 3}
+			]
+		}
+	}`
+
+	var resp StatsResponse
+	if err := json.Unmarshal([]byte(jsonData), &resp); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	// Verify queryTypeChartData.
+	if got := resp.Response.QueryTypeChartData["A"]; got != 100 {
+		t.Errorf("QueryTypeChartData[A] = %v, want 100", got)
+	}
+	if got := resp.Response.QueryTypeChartData["AAAA"]; got != 40 {
+		t.Errorf("QueryTypeChartData[AAAA] = %v, want 40", got)
+	}
+	if got := len(resp.Response.QueryTypeChartData); got != 5 {
+		t.Errorf("len(QueryTypeChartData) = %v, want 5", got)
+	}
+
+	// Verify protocolTypeChartData.
+	if got := resp.Response.ProtocolTypeChartData["UDP"]; got != 140 {
+		t.Errorf("ProtocolTypeChartData[UDP] = %v, want 140", got)
+	}
+	if got := resp.Response.ProtocolTypeChartData["TCP"]; got != 20 {
+		t.Errorf("ProtocolTypeChartData[TCP] = %v, want 20", got)
+	}
+
+	// Verify topClients.
+	if got := len(resp.Response.TopClients); got != 2 {
+		t.Fatalf("len(TopClients) = %v, want 2", got)
+	}
+	if got := resp.Response.TopClients[0].Name; got != "10.0.0.1" {
+		t.Errorf("TopClients[0].Name = %v, want 10.0.0.1", got)
+	}
+	if got := resp.Response.TopClients[0].Hits; got != 80 {
+		t.Errorf("TopClients[0].Hits = %v, want 80", got)
+	}
+	if resp.Response.TopClients[0].RateLimited {
+		t.Error("TopClients[0].RateLimited = true, want false")
+	}
+	if !resp.Response.TopClients[1].RateLimited {
+		t.Error("TopClients[1].RateLimited = false, want true")
+	}
+
+	// Verify topDomains.
+	if got := len(resp.Response.TopDomains); got != 2 {
+		t.Fatalf("len(TopDomains) = %v, want 2", got)
+	}
+	if got := resp.Response.TopDomains[0].Name; got != "example.com" {
+		t.Errorf("TopDomains[0].Name = %v, want example.com", got)
+	}
+	if got := resp.Response.TopDomains[0].Hits; got != 50 {
+		t.Errorf("TopDomains[0].Hits = %v, want 50", got)
+	}
+
+	// Verify topBlockedDomains.
+	if got := len(resp.Response.TopBlockedDomains); got != 1 {
+		t.Fatalf("len(TopBlockedDomains) = %v, want 1", got)
+	}
+	if got := resp.Response.TopBlockedDomains[0].Name; got != "ads.example.com" {
+		t.Errorf("TopBlockedDomains[0].Name = %v, want ads.example.com", got)
+	}
+	if got := resp.Response.TopBlockedDomains[0].Hits; got != 3 {
+		t.Errorf("TopBlockedDomains[0].Hits = %v, want 3", got)
+	}
+}
+
+func TestStatsResponse_EmptyChartData(t *testing.T) {
+	// JSON with only stats -- no chart data fields. Verifies backward compatibility.
+	jsonData := `{
+		"status": "ok",
+		"response": {
+			"stats": {
+				"totalQueries": 100,
+				"totalNoError": 90,
+				"totalServerFailure": 2,
+				"totalNxDomain": 5,
+				"totalRefused": 3,
+				"totalAuthoritative": 10,
+				"totalRecursive": 80,
+				"totalCached": 70,
+				"totalBlocked": 5,
+				"totalDropped": 1,
+				"totalClients": 10,
+				"zones": 3,
+				"cachedEntries": 500,
+				"allowedZones": 1,
+				"blockedZones": 2,
+				"blockListZones": 50000
+			}
+		}
+	}`
+
+	var resp StatsResponse
+	if err := json.Unmarshal([]byte(jsonData), &resp); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	if resp.Response.QueryTypeChartData != nil {
+		t.Errorf("QueryTypeChartData = %v, want nil", resp.Response.QueryTypeChartData)
+	}
+	if resp.Response.ProtocolTypeChartData != nil {
+		t.Errorf("ProtocolTypeChartData = %v, want nil", resp.Response.ProtocolTypeChartData)
+	}
+	if resp.Response.TopClients != nil {
+		t.Errorf("TopClients = %v, want nil", resp.Response.TopClients)
+	}
+	if resp.Response.TopDomains != nil {
+		t.Errorf("TopDomains = %v, want nil", resp.Response.TopDomains)
+	}
+	if resp.Response.TopBlockedDomains != nil {
+		t.Errorf("TopBlockedDomains = %v, want nil", resp.Response.TopBlockedDomains)
+	}
+
+	// Stats should still parse correctly.
+	if resp.Response.Stats.TotalQueries != 100 {
+		t.Errorf("totalQueries = %v, want 100", resp.Response.Stats.TotalQueries)
+	}
+}
