@@ -20,92 +20,70 @@ type Collector struct {
 	logger *slog.Logger
 
 	// Metric descriptors.
-	up               *prometheus.Desc
-	scrapeDuration   *prometheus.Desc
-	serverInfo       *prometheus.Desc
-	queriesTotal     *prometheus.Desc
-	responsesTotal   *prometheus.Desc
-	queriesByType    *prometheus.Desc
-	blockedTotal     *prometheus.Desc
-	blocklistDomains *prometheus.Desc
-	blockedZones     *prometheus.Desc
-	allowedZones     *prometheus.Desc
-	cacheEntries     *prometheus.Desc
-	clients          *prometheus.Desc
-	zones            *prometheus.Desc
+	up                  *prometheus.Desc
+	scrapeDuration      *prometheus.Desc
+	serverInfo          *prometheus.Desc
+	queriesTotal        *prometheus.Desc
+	responsesTotal      *prometheus.Desc
+	queriesByType       *prometheus.Desc
+	blockedTotal        *prometheus.Desc
+	blocklistDomains    *prometheus.Desc
+	blockedZones        *prometheus.Desc
+	allowedZones        *prometheus.Desc
+	cacheEntries        *prometheus.Desc
+	clients             *prometheus.Desc
+	zones               *prometheus.Desc
+	queriesByRecordType *prometheus.Desc
+	queriesByProtocol   *prometheus.Desc
+	uptimeSeconds       *prometheus.Desc
+
+	// Optional top-entry descriptors (nil when disabled).
+	topClients        *prometheus.Desc
+	topDomains        *prometheus.Desc
+	topBlockedDomains *prometheus.Desc
+
+	topEntriesEnabled bool
+}
+
+// newDesc creates a prometheus.Desc with the namespace prefix.
+func newDesc(subsystem, name, help string, labels ...string) *prometheus.Desc {
+	return prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, subsystem, name),
+		help, labels, nil,
+	)
 }
 
 // NewCollector creates a new Technitium collector.
-func NewCollector(client *technitium.Client, logger *slog.Logger) *Collector {
-	return &Collector{
-		client: client,
-		logger: logger,
-		up: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "up"),
-			"Whether the Technitium server is reachable.",
-			nil, nil,
-		),
-		scrapeDuration: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "scrape_duration_seconds"),
-			"Time taken to scrape metrics from Technitium.",
-			nil, nil,
-		),
-		serverInfo: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "server", "info"),
-			"Technitium DNS server information.",
-			[]string{"version", "server_domain"}, nil,
-		),
-		queriesTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "queries", "total"),
-			"Total DNS queries processed.",
-			nil, nil,
-		),
-		responsesTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "responses", "total"),
-			"DNS responses by response code.",
-			[]string{"rcode"}, nil,
-		),
-		queriesByType: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "queries_by_type", "total"),
-			"DNS queries by resolution type.",
-			[]string{"type"}, nil,
-		),
-		blockedTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "blocked_queries", "total"),
-			"Total blocked DNS queries.",
-			nil, nil,
-		),
-		blocklistDomains: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "blocklist_domains"),
-			"Number of domains in blocklists.",
-			nil, nil,
-		),
-		blockedZones: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "blocked_zones"),
-			"Number of blocked zones configured.",
-			nil, nil,
-		),
-		allowedZones: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "allowed_zones"),
-			"Number of allowed zones configured.",
-			nil, nil,
-		),
-		cacheEntries: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "cache", "entries"),
-			"Current number of entries in cache.",
-			nil, nil,
-		),
-		clients: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "clients", "total"),
-			"Total unique clients seen.",
-			nil, nil,
-		),
-		zones: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "zones"),
-			"Total number of zones.",
-			nil, nil,
-		),
+func NewCollector(client *technitium.Client, logger *slog.Logger, topEntries bool) *Collector {
+	c := &Collector{
+		client:              client,
+		logger:              logger,
+		topEntriesEnabled:   topEntries,
+		up:                  newDesc("", "up", "Whether the Technitium server is reachable."),
+		scrapeDuration:      newDesc("", "scrape_duration_seconds", "Time taken to scrape metrics from Technitium."),
+		serverInfo:          newDesc("server", "info", "Technitium DNS server information.", "version", "server_domain"),
+		queriesTotal:        newDesc("queries", "total", "Total DNS queries processed."),
+		responsesTotal:      newDesc("responses", "total", "DNS responses by response code.", "rcode"),
+		queriesByType:       newDesc("queries_by_type", "total", "DNS queries by resolution type.", "type"),
+		blockedTotal:        newDesc("blocked_queries", "total", "Total blocked DNS queries."),
+		blocklistDomains:    newDesc("", "blocklist_domains", "Number of domains in blocklists."),
+		blockedZones:        newDesc("", "blocked_zones", "Number of blocked zones configured."),
+		allowedZones:        newDesc("", "allowed_zones", "Number of allowed zones configured."),
+		cacheEntries:        newDesc("cache", "entries", "Current number of entries in cache."),
+		clients:             newDesc("clients", "total", "Total unique clients seen."),
+		zones:               newDesc("", "zones", "Total number of zones."),
+		queriesByRecordType: newDesc("queries_by_record_type", "total", "DNS queries by record type (A, AAAA, TXT, etc.).", "record_type"),
+		queriesByProtocol:   newDesc("queries_by_protocol", "total", "DNS queries by transport protocol.", "protocol"),
+		uptimeSeconds:       newDesc("server", "uptime_seconds", "Technitium DNS server uptime in seconds."),
 	}
+
+	if topEntries {
+		c.topClients = newDesc("top_clients", "hits", "Top clients by query count.", "client", "rate_limited")
+		c.topDomains = newDesc("top_domains", "hits", "Top queried domains by hit count.", "domain")
+		c.topBlockedDomains = newDesc("top_blocked_domains", "hits", "Top blocked domains by hit count.", "domain")
+	}
+
+	return c
 }
 
 // Describe sends all metric descriptors to the provided channel.
@@ -123,6 +101,15 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.cacheEntries
 	ch <- c.clients
 	ch <- c.zones
+	ch <- c.queriesByRecordType
+	ch <- c.queriesByProtocol
+	ch <- c.uptimeSeconds
+
+	if c.topEntriesEnabled {
+		ch <- c.topClients
+		ch <- c.topDomains
+		ch <- c.topBlockedDomains
+	}
 }
 
 // Collect fetches metrics from Technitium and sends them to the provided channel.
