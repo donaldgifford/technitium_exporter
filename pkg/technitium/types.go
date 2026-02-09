@@ -10,7 +10,25 @@ type StatsResponse struct {
 
 // StatsResponseData contains the stats data from the dashboard endpoint.
 type StatsResponseData struct {
-	Stats Stats `json:"stats"`
+	Stats                 Stats            `json:"stats"`
+	QueryTypeChartData    map[string]int64 `json:"queryTypeChartData"`
+	ProtocolTypeChartData map[string]int64 `json:"protocolTypeChartData"`
+	TopClients            []TopClient      `json:"topClients"`
+	TopDomains            []TopEntry       `json:"topDomains"`
+	TopBlockedDomains     []TopEntry       `json:"topBlockedDomains"`
+}
+
+// TopClient represents a top client entry from the dashboard API.
+type TopClient struct {
+	Name        string `json:"name"`
+	Hits        int64  `json:"hits"`
+	RateLimited bool   `json:"rateLimited"`
+}
+
+// TopEntry represents a top domain entry from the dashboard API.
+type TopEntry struct {
+	Name string `json:"name"`
+	Hits int64  `json:"hits"`
 }
 
 // Stats contains the DNS server statistics.
