@@ -82,9 +82,9 @@ new types for top-N entries.
      backward compatibility (maps should be nil, slices should be nil)
 
 **Success criteria:**
-- [ ] `go test -v -run TestStatsResponse_ChartData ./pkg/technitium/...` passes
-- [ ] `go test -v -run TestStatsResponse_EmptyChartData ./pkg/technitium/...` passes
-- [ ] All existing client tests still pass
+- [x] `go test -v -run TestStatsResponse_ChartData ./pkg/technitium/...` passes
+- [x] `go test -v -run TestStatsResponse_EmptyChartData ./pkg/technitium/...` passes
+- [x] All existing client tests still pass
 
 ---
 
