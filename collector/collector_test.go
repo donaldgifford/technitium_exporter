@@ -132,8 +132,9 @@ func TestCollector_Collect_RealWorldData(t *testing.T) {
 	}
 
 	// We expect: up, scrapeDuration, serverInfo, queriesTotal, 4 responsesTotal, 5 queriesByType,
-	// blockedTotal, blocklistDomains, blockedZones, allowedZones, cacheEntries, clients, zones = 20 metrics.
-	expectedMetrics := 20
+	// blockedTotal, blocklistDomains, blockedZones, allowedZones, cacheEntries, clients, zones,
+	// uptimeSeconds = 21 metrics (no chart data in fixture yet).
+	expectedMetrics := 21
 	if metricCount != expectedMetrics {
 		t.Errorf("expected %d metrics, got %d", expectedMetrics, metricCount)
 	}
