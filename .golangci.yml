@@ -247,7 +247,7 @@ formatters:
       simplify: true
     goimports:
       local-prefixes:
-        - github.com/donaldgifford/tflint-ruleset-terraform-style
+        - github.com/donaldgifford/technitium_exporter
     golines:
       max-len: 150
     gci:
