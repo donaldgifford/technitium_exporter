@@ -8,7 +8,7 @@ Prometheus exporter for Technitium DNS Server. Exposes DNS server metrics in Pro
 
 ## Build Commands
 
-Requires Go 1.25.4+ (managed via mise).
+Requires Go 1.25.7+ (managed via mise).
 
 ```bash
 # Build the binary
@@ -67,8 +67,10 @@ pkg/technitium/             # Technitium API client and response types
 deploy/
 └── deb/                    # Debian package files (systemd, scripts, copyright)
 contrib/
-├── grafana/                # Grafana dashboard JSON
+├── grafana/                # Grafana dashboard JSONs (light + dark)
 └── prometheus/             # Prometheus alert rules
+docs/                       # Planning docs, review findings
+scripts/                    # Utility scripts (labels.sh)
 ```
 
 **Key patterns:**
@@ -127,6 +129,24 @@ The exporter uses two endpoints:
 - `/api/settings/get?token=<token>` - Server version and domain (requires admin token)
 
 Note: Settings endpoint requires admin permissions. If unavailable, exporter falls back to version="unknown" with server name from stats response.
+
+The stats endpoint returns more data than currently parsed. See `docs/exporter-enhancements-plan.md` for planned additions:
+- `queryTypeChartData` - Query counts by DNS record type (A, AAAA, TXT, etc.)
+- `protocolTypeChartData` - Query counts by transport protocol (UDP, TCP)
+- `topClients` - Top clients with hit counts and rate-limit status
+- `topDomains` - Top queried domains
+- `topBlockedDomains` - Top blocked domains
+
+### Technitium DNS Apps
+
+The **Log Exporter App** (installed via Technitium admin UI > Apps) provides structured JSON query logs via syslog, file, and HTTP sinks. This is used for the Loki integration (see `docs/loki-alloy-integration-plan.md`).
+
+Log format (JSON Lines):
+```json
+{"clientIp":"10.10.10.91","protocol":"Tcp","responseCode":"NoError","responseRtt":13.498,"responseType":"Recursive","question":{"questionName":"play.google.com","questionType":"A","questionClass":"IN"},"answers":[...],"edns":[],"timestamp":"2026-02-09T15:17:14.193Z"}
+```
+
+Key fields: `clientIp`, `protocol` (Udp/Tcp), `responseType` (Authoritative/Cached/Recursive/Blocked), `responseCode`, `responseRtt` (ms, Recursive only), `question.questionName`, `question.questionType`.
 
 ## Packaging
 
@@ -196,5 +216,35 @@ Four-tool security stack managed via mise:
 
 Example configurations in `contrib/`:
 
-- `grafana/technitium-dashboard.json` - Grafana dashboard
+- `grafana/technitium-dashboard.json` - Grafana dashboard (light)
+- `grafana/technitium-dark-dashboard.json` - Grafana dashboard (dark, Unbound-inspired)
 - `prometheus/alerts.yml` - Prometheus alerting rules
+
+## Planning Docs
+
+Active planning documents in `docs/`:
+
+- `docs/exporter-enhancements-plan.md` - 6 new metric families from existing API data (query types, protocol, top clients/domains/blocked, uptime)
+- `docs/loki-alloy-integration-plan.md` - Loki + Alloy integration for DNS query log analytics (syslog/file/API sources, 10 dashboard panels, 3 deployment tiers)
+- `docs/security-tooling-plan.md` - Security tooling integration (completed)
+
+## Code Review Findings
+
+Review findings tracked as GitHub issues (#6-#15) and documented in `docs/review/`:
+
+| Issue | Finding | Severity |
+|-------|---------|----------|
+| #6 | Token in query string (API constraint) | HIGH |
+| #7 | `errors.Is` comparison | HIGH |
+| #8 | goimports wrong prefix | MEDIUM |
+| #9 | Silent SCRAPE_TIMEOUT failure | MEDIUM |
+| #10 | No response body size limit | MEDIUM |
+| #11 | URL string concatenation | MEDIUM |
+| #12 | Hardcoded context.Background() | LOW |
+| #13 | Duplicate blocked metric | LOW |
+| #14 | Test helpers missing *testing.T | LOW |
+| #15 | Missing config/exporter tests | LOW |
+
+## GitHub Labels
+
+Labels are managed via `scripts/labels.sh` and `.github/labeler.yml`. Run `scripts/labels.sh` to sync labels to the repo. Use `--dry-run` to preview, `--force` to update existing labels.
