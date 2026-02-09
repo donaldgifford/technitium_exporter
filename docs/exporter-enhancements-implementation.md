@@ -346,10 +346,10 @@ verifying the 6 new metrics.
       `len(resp.Response.TopClients)`, etc.
 
 **Success criteria:**
-- [ ] `go test -v -race ./collector/...` -- all tests pass
-- [ ] `go test -v -race ./pkg/technitium/...` -- all tests pass
-- [ ] `make test` -- full test suite green
-- [ ] `make lint` -- no lint issues
+- [x] `go test -v -race ./collector/...` -- all tests pass
+- [x] `go test -v -race ./pkg/technitium/...` -- all tests pass
+- [x] `make test` -- full test suite green
+- [x] `make lint` -- no lint issues
 
 ---
 
