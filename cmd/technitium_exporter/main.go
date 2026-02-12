@@ -39,10 +39,6 @@ func main() {
 		Default("info").
 		Enum("debug", "info", "warn", "error")
 
-	topEntries := app.Flag("collector.top-entries",
-		"Enable top clients/domains/blocked domains metrics.").
-		Default("true").Bool()
-
 	if _, err := app.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing command line: %v\n", err)
 		os.Exit(1)
@@ -87,7 +83,7 @@ func main() {
 	client := technitium.NewClient(cfg.TechnitiumURL, cfg.TechnitiumToken, cfg.ScrapeTimeout)
 
 	// Create and register collector.
-	coll := collector.NewCollector(client, logger, *topEntries)
+	coll := collector.NewCollector(client, logger)
 	prometheus.MustRegister(coll)
 
 	// Set up HTTP handlers.
