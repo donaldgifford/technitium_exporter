@@ -236,8 +236,14 @@ func TestStatsResponse_ChartData(t *testing.T) {
 				"blockedZones": 1,
 				"blockListZones": 50000
 			},
-			"queryTypeChartData": {"A": 100, "AAAA": 40, "TXT": 10, "HTTPS": 5, "PTR": 5},
-			"protocolTypeChartData": {"UDP": 140, "TCP": 20},
+			"queryTypeChartData": {
+				"labels": ["A", "AAAA", "TXT", "HTTPS", "PTR"],
+				"datasets": [{"data": [100, 40, 10, 5, 5]}]
+			},
+			"protocolTypeChartData": {
+				"labels": ["Udp", "Tcp"],
+				"datasets": [{"data": [140, 20]}]
+			},
 			"topClients": [
 				{"name": "10.0.0.1", "hits": 80, "rateLimited": false},
 				{"name": "10.0.0.2", "hits": 60, "rateLimited": true}
@@ -257,23 +263,23 @@ func TestStatsResponse_ChartData(t *testing.T) {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	// Verify queryTypeChartData.
-	if got := resp.Response.QueryTypeChartData["A"]; got != 100 {
-		t.Errorf("QueryTypeChartData[A] = %v, want 100", got)
+	// Verify queryTypeChartData (Chart.js format).
+	if got := len(resp.Response.QueryTypeChartData.Labels); got != 5 {
+		t.Errorf("len(QueryTypeChartData.Labels) = %v, want 5", got)
 	}
-	if got := resp.Response.QueryTypeChartData["AAAA"]; got != 40 {
-		t.Errorf("QueryTypeChartData[AAAA] = %v, want 40", got)
+	if got := resp.Response.QueryTypeChartData.Labels[0]; got != "A" {
+		t.Errorf("QueryTypeChartData.Labels[0] = %v, want A", got)
 	}
-	if got := len(resp.Response.QueryTypeChartData); got != 5 {
-		t.Errorf("len(QueryTypeChartData) = %v, want 5", got)
+	if got := resp.Response.QueryTypeChartData.Datasets[0].Data[0]; got != 100 {
+		t.Errorf("QueryTypeChartData.Datasets[0].Data[0] = %v, want 100", got)
 	}
 
-	// Verify protocolTypeChartData.
-	if got := resp.Response.ProtocolTypeChartData["UDP"]; got != 140 {
-		t.Errorf("ProtocolTypeChartData[UDP] = %v, want 140", got)
+	// Verify protocolTypeChartData (Chart.js format).
+	if got := len(resp.Response.ProtocolTypeChartData.Labels); got != 2 {
+		t.Errorf("len(ProtocolTypeChartData.Labels) = %v, want 2", got)
 	}
-	if got := resp.Response.ProtocolTypeChartData["TCP"]; got != 20 {
-		t.Errorf("ProtocolTypeChartData[TCP] = %v, want 20", got)
+	if got := resp.Response.ProtocolTypeChartData.Datasets[0].Data[0]; got != 140 {
+		t.Errorf("ProtocolTypeChartData.Datasets[0].Data[0] = %v, want 140", got)
 	}
 
 	// Verify topClients.
@@ -347,11 +353,11 @@ func TestStatsResponse_EmptyChartData(t *testing.T) {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	if resp.Response.QueryTypeChartData != nil {
-		t.Errorf("QueryTypeChartData = %v, want nil", resp.Response.QueryTypeChartData)
+	if got := len(resp.Response.QueryTypeChartData.Labels); got != 0 {
+		t.Errorf("len(QueryTypeChartData.Labels) = %v, want 0", got)
 	}
-	if resp.Response.ProtocolTypeChartData != nil {
-		t.Errorf("ProtocolTypeChartData = %v, want nil", resp.Response.ProtocolTypeChartData)
+	if got := len(resp.Response.ProtocolTypeChartData.Labels); got != 0 {
+		t.Errorf("len(ProtocolTypeChartData.Labels) = %v, want 0", got)
 	}
 	if resp.Response.TopClients != nil {
 		t.Errorf("TopClients = %v, want nil", resp.Response.TopClients)

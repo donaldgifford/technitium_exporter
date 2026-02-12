@@ -47,8 +47,14 @@ func realWorldStatsJSON() string {
 				"blockedZones": 0,
 				"blockListZones": 214040
 			},
-			"queryTypeChartData": {"A": 40, "AAAA": 25, "PTR": 5, "TXT": 2},
-			"protocolTypeChartData": {"UDP": 65, "TCP": 7},
+			"queryTypeChartData": {
+				"labels": ["A", "AAAA", "PTR", "TXT"],
+				"datasets": [{"data": [40, 25, 5, 2]}]
+			},
+			"protocolTypeChartData": {
+				"labels": ["Udp", "Tcp"],
+				"datasets": [{"data": [65, 7]}]
+			},
 			"topClients": [
 				{"name": "10.10.11.18", "hits": 50, "rateLimited": false},
 				{"name": "10.10.11.1", "hits": 22, "rateLimited": false}
@@ -88,8 +94,14 @@ func highTrafficStatsJSON() string {
 				"blockedZones": 12,
 				"blockListZones": 500000
 			},
-			"queryTypeChartData": {"A": 800000, "AAAA": 500000, "TXT": 100000, "HTTPS": 50000, "PTR": 30000, "SRV": 2000},
-			"protocolTypeChartData": {"UDP": 1400000, "TCP": 123456},
+			"queryTypeChartData": {
+				"labels": ["A", "AAAA", "TXT", "HTTPS", "PTR", "SRV"],
+				"datasets": [{"data": [800000, 500000, 100000, 50000, 30000, 2000]}]
+			},
+			"protocolTypeChartData": {
+				"labels": ["Udp", "Tcp"],
+				"datasets": [{"data": [1400000, 123456]}]
+			},
 			"topClients": [
 				{"name": "10.0.0.1", "hits": 250000, "rateLimited": false},
 				{"name": "10.0.0.2", "hits": 180000, "rateLimited": true}
@@ -635,8 +647,8 @@ func TestStatsResponse_Unmarshal(t *testing.T) {
 	}
 
 	// Verify chart data fields parse correctly.
-	if got := resp.Response.QueryTypeChartData["A"]; got != 40 {
-		t.Errorf("QueryTypeChartData[A] = %v, want 40", got)
+	if got := len(resp.Response.QueryTypeChartData.Labels); got != 4 {
+		t.Errorf("len(QueryTypeChartData.Labels) = %v, want 4", got)
 	}
 	if got := len(resp.Response.TopClients); got != 2 {
 		t.Errorf("len(TopClients) = %v, want 2", got)

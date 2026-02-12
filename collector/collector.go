@@ -206,20 +206,13 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 // collectChartData emits metrics from the dashboard chart data and top-N lists.
 func (c *Collector) collectChartData(ch chan<- prometheus.Metric, stats *technitium.StatsResponse) {
 	// Query type chart data (A, AAAA, TXT, etc.).
-	for recordType, count := range stats.Response.QueryTypeChartData {
-		ch <- prometheus.MustNewConstMetric(
-			c.queriesByRecordType, prometheus.CounterValue,
-			float64(count), recordType,
-		)
-	}
+	// The API returns Chart.js format: labels[] and datasets[0].data[] are parallel arrays.
+	emitChartMetrics(ch, c.queriesByRecordType, prometheus.CounterValue,
+		stats.Response.QueryTypeChartData, false)
 
 	// Protocol type chart data (UDP, TCP, etc.).
-	for protocol, count := range stats.Response.ProtocolTypeChartData {
-		ch <- prometheus.MustNewConstMetric(
-			c.queriesByProtocol, prometheus.CounterValue,
-			float64(count), strings.ToLower(protocol),
-		)
-	}
+	emitChartMetrics(ch, c.queriesByProtocol, prometheus.CounterValue,
+		stats.Response.ProtocolTypeChartData, true)
 
 	if !c.topEntriesEnabled {
 		return
@@ -248,6 +241,29 @@ func (c *Collector) collectChartData(ch chan<- prometheus.Metric, stats *technit
 			c.topBlockedDomains, prometheus.GaugeValue,
 			float64(domain.Hits), domain.Name,
 		)
+	}
+}
+
+// emitChartMetrics emits metrics from Chart.js formatted data by zipping labels with data values.
+func emitChartMetrics(
+	ch chan<- prometheus.Metric,
+	desc *prometheus.Desc,
+	valueType prometheus.ValueType,
+	chart technitium.ChartData,
+	lowercaseLabel bool,
+) {
+	if len(chart.Datasets) == 0 {
+		return
+	}
+	data := chart.Datasets[0].Data
+	for i, label := range chart.Labels {
+		if i >= len(data) {
+			break
+		}
+		if lowercaseLabel {
+			label = strings.ToLower(label)
+		}
+		ch <- prometheus.MustNewConstMetric(desc, valueType, float64(data[i]), label)
 	}
 }
 
