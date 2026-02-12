@@ -10,7 +10,37 @@ type StatsResponse struct {
 
 // StatsResponseData contains the stats data from the dashboard endpoint.
 type StatsResponseData struct {
-	Stats Stats `json:"stats"`
+	Stats                 Stats       `json:"stats"`
+	QueryTypeChartData    ChartData   `json:"queryTypeChartData"`
+	ProtocolTypeChartData ChartData   `json:"protocolTypeChartData"`
+	TopClients            []TopClient `json:"topClients"`
+	TopDomains            []TopEntry  `json:"topDomains"`
+	TopBlockedDomains     []TopEntry  `json:"topBlockedDomains"`
+}
+
+// ChartData represents Chart.js formatted data from the Technitium dashboard API.
+// The labels slice and datasets[0].Data slice are parallel arrays.
+type ChartData struct {
+	Labels   []string       `json:"labels"`
+	Datasets []ChartDataset `json:"datasets"`
+}
+
+// ChartDataset represents a single dataset in Chart.js formatted data.
+type ChartDataset struct {
+	Data []int64 `json:"data"`
+}
+
+// TopClient represents a top client entry from the dashboard API.
+type TopClient struct {
+	Name        string `json:"name"`
+	Hits        int64  `json:"hits"`
+	RateLimited bool   `json:"rateLimited"`
+}
+
+// TopEntry represents a top domain entry from the dashboard API.
+type TopEntry struct {
+	Name string `json:"name"`
+	Hits int64  `json:"hits"`
 }
 
 // Stats contains the DNS server statistics.
