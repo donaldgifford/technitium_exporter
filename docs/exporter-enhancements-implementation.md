@@ -372,7 +372,7 @@ make security
 - [x] `make test-coverage` -- all tests pass (collector: 97.8%, client: 91.5%)
 - [x] `make build` -- binary builds successfully
 - [x] `make security` -- no vulnerabilities (govulncheck clean, trivy 0 findings)
-- [ ] Manual smoke test: run the built binary against a test server (if
+- [x] Manual smoke test: run the built binary against a test server (if
   available) and curl `/metrics` to verify new metrics appear
 
 ---
