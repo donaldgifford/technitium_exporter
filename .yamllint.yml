@@ -1,23 +1,58 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/yamllint.json
+# yamllint configuration for project
+
 extends: default
-ignore: |
-  **/node_modules
+
 rules:
-  braces:
-    max-spaces-inside: 1
-    level: error
-  brackets:
-    max-spaces-inside: 1
-    level: error
-  commas: disable
-  comments: disable
-  comments-indentation: disable
-  document-start: disable
+  # Line length - GitHub Actions can have long lines
+  line-length:
+    max: 120
+    level: warning
+
+  # Indentation - 2 spaces
   indentation:
-    spaces: consistent
-    indent-sequences: consistent
+    spaces: 2
+    indent-sequences: true
+
+  # Comments - require space after #
+  comments:
+    min-spaces-from-content: 1
+
+  # Trailing spaces
+  # trailing-spaces: enable
+
+  # Document start (---) - not required for all files
+  document-start:
+    present: true
+
+  # Truthy values - allow yes/no/on/off
+  truthy:
+    allowed-values: ["true", "false", "yes", "no", "on", "off"]
+    check-keys: false
+
+  # Empty values
+  empty-values:
+    forbid-in-block-mappings: true
+    forbid-in-flow-mappings: true
+
+  # Brackets
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+
+  # Braces
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
   key-duplicates:
     ignore: |
       config/testdata/section_key_dup.bad.yml
-  line-length: disable
-  truthy:
-    check-keys: false
+
+ignore: |-
+  node_modules/
+  vendor/
+  .git/
+  .github/
+  .charts/

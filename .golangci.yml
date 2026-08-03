@@ -1,6 +1,19 @@
 ---
+# yaml-language-server: $schema=https://json.schemastore.org/golangci-lint.json
 # golangci-lint configuration based on Uber's Go Style Guide
 # https://github.com/uber-go/guide/blob/master/style.md
+#
+# Uber emphasizes:
+# 1. Always check errors
+# 2. Use context properly
+# 3. Close resources (defer close)
+# 4. Keep functions small and simple
+# 5. Avoid global mutable state
+# 6. Use table-driven tests
+# 7. Handle errors explicitly, wrap with %w
+# 8. Prefer composition over inheritance
+# 9. Use functional options for configs
+# 10. Document exported functions and types
 
 version: "2"
 
@@ -27,8 +40,7 @@ linters:
 
     # Code Quality & Simplification
     - govet  # Uber: Standard Go static analysis
-    - staticcheck  # Uber: Comprehensive static analysis
-    # - gosimple # Uber: Simplify code
+    - staticcheck  # Uber: SA + S (gosimple) + ST (stylecheck) via checks: all
     - unused  # Uber: Remove unused code
     - ineffassign  # Catch ineffectual assignments
     - unconvert  # Remove unnecessary type conversions
@@ -63,7 +75,7 @@ linters:
     # Nil & Pointer Safety
     - nilerr  # Uber: Check returning nil explicitly
     - nilnil  # Simultaneous nil return values
-    # - nilaway # Nil pointer dereference detection
+    # - nilaway  # Nil pointer dereference detection
 
     # Testing
     - testifylint  # Proper use of testify assertions
@@ -74,7 +86,6 @@ linters:
     - gosec  # Security issues
 
     # Style & Conventions
-    # - stylecheck # Uber: Follow Go style conventions
     - godot  # Comments should end with periods
     - goheader  # License header
 
@@ -85,11 +96,20 @@ linters:
       check-blank: true
       exclude-functions:
         - (io.Closer).Close  # Common pattern to defer close
+        - (*github.com/fatih/color.Color).Printf  # CLI color output to stdout.
+        - (*github.com/fatih/color.Color).Println  # CLI color output to stdout.
+        - (*github.com/spf13/cobra.Command).MarkFlagRequired  # Only fails if flag name is wrong.
 
     errorlint:
       errorf: true
       asserts: true
       comparison: true
+
+    # Staticcheck includes SA (staticcheck), S (gosimple), and ST (stylecheck).
+    # All three must be explicitly enabled via checks; only SA runs by default.
+    staticcheck:
+      checks:
+        - "all"
 
     # Complexity limits (Uber recommendations)
     gocyclo:
@@ -197,6 +217,7 @@ linters:
           - goconst
           - gosec
           - dupl
+          - nilnil
 
       # Main files often have init functions
       - path: ./main.go
@@ -211,7 +232,12 @@ linters:
       # Mock files
       - path: mock_.*\.go$
         linters:
-          - all
+          - revive
+          - gocritic
+          - unparam
+          - errcheck
+          - nilnil
+          - funlen
 
       # Allow long lines in struct tags
       - linters:
@@ -221,6 +247,17 @@ linters:
       - linters:
           - gosec
         text: "G306:"
+
+      # CLI tool reads user-specified file paths by design.
+      - linters:
+          - gosec
+        text: "G304:"
+
+      # CLI color output to stdout; errors are not actionable.
+      - linters:
+          - gosec
+        text: "G104:"
+        path: cmd/(compare|diff)\.go$
 
     paths:
       - vendor
@@ -262,14 +299,3 @@ formatters:
       - third_party$
       - builtin$
       - examples$
-    # Uber emphasizes:
-    # 1. Always check errors
-    # 2. Use context properly
-    # 3. Close resources (defer close)
-    # 4. Keep functions small and simple
-    # 5. Avoid global mutable state
-    # 6. Use table-driven tests
-    # 7. Handle errors explicitly, wrap with %w
-    # 8. Prefer composition over inheritance
-    # 9. Use functional options for configs
-    # 10. Document exported functions and types

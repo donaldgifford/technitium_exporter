@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: CI
 
 on:
@@ -34,7 +35,7 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.8.0
+          version: v2.11.4
 
   test-go:
     name: Test Go
@@ -47,20 +48,31 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Set up mise (for just)
+        uses: jdx/mise-action@v4
+        with:
+          experimental: true
+
       - name: Run unit tests
-        run: make test-coverage
+        run: just test-coverage
+
+      - name: Coverage gate (per-package floor)
+        run: just coverage-gate
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: donaldgifford/technitium_exporter
         continue-on-error: true
 
-  build:
-    name: Build
+  security:
+    name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -69,11 +81,20 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Verify builds for all platforms
-        uses: goreleaser/goreleaser-action@v6
+      - name: Run govulncheck
+        uses: donaldgifford/govulncheck-action@v1
         with:
-          version: "~> v2"
-          args: build --snapshot --clean
+          go-version-file: go.mod
+          go-package: ./...
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: "1"
 
   package-lint:
     name: Package Lint (Debian)
@@ -106,12 +127,12 @@ jobs:
           lintian --no-cfg dist/technitium-exporter_*_amd64.deb
           echo "Lintian check passed (warnings are acceptable)"
 
-  security:
-    name: Security Scan
+  build:
+    name: Build
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
       contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v6
 
@@ -120,17 +141,42 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run govulncheck
-        uses: donaldgifford/govulncheck-action@v1
-        with:
-          go-version-file: go.mod
-          go-package: ./...
+      - name: Install syft
+        uses: anchore/sbom-action/download-syft@v0
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
+      - name: Build snapshot release with SBOMs
+        uses: goreleaser/goreleaser-action@v7.1.0
         with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln
-          severity: HIGH,CRITICAL
-          exit-code: "1"
+          version: "~> v2"
+          args: release --snapshot --skip=publish --skip=sign --clean
+
+      # The archive name_template embeds the version, so the SBOM filename is
+      # not knowable ahead of time (e.g. technitium_exporter_v0.0.0-dev_linux_amd64.tar.gz.spdx.json
+      # for snapshots, technitium_exporter_0.1.0_linux_amd64... for tags). Resolve it by glob.
+      - name: Locate archive SBOM
+        id: sbom
+        run: |
+          shopt -s nullglob
+          files=(dist/technitium_exporter_*_linux_amd64.tar.gz.spdx.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::no linux_amd64 archive SBOM found in dist/"
+            ls -la dist/ || true
+            exit 1
+          fi
+          echo "path=${files[0]}" >>"$GITHUB_OUTPUT"
+
+      - name: Scan archive SBOM
+        id: scan-sbom
+        uses: anchore/scan-action@v7
+        with:
+          sbom: ${{ steps.sbom.outputs.path }}
+          severity-cutoff: high
+          fail-build: false
+          output-format: sarif
+
+      - name: Upload SBOM scan SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4.35.5
+        with:
+          sarif_file: ${{ steps.scan-sbom.outputs.sarif }}
+          category: anchore-archive-sbom

@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://www.schemastore.org/pull-request-labeler.json
 # Add 'root' label to any root file changes
 # Quotation marks are required for the leading asterisk
 go:
@@ -14,29 +15,37 @@ dependencies:
       - any-glob-to-any-file: "go.mod"
       - any-glob-to-any-file: "go.sum"
       - any-glob-to-any-file: mise.toml
+      - any-glob-to-any-file: renovate.json5
+      - any-glob-to-any-file: renovate.json
 
 # Add 'Documentation' label to any changes within 'docs' folder or any subfolders
 documentation:
   - changed-files:
       - any-glob-to-any-file: docs/**
       - any-glob-to-any-file: README.md
+      - any-glob-to-any-file: .docz.yaml
 
 ci:
   - changed-files:
       - any-glob-to-any-file: .github/**
       - any-glob-to-any-file: Makefile
+      - any-glob-to-any-file: justfile
+      - any-glob-to-any-file: Makefile
 
 repo:
   - changed-files:
       - any-glob-to-any-file: .codecov.yml
+      - any-glob-to-any-file: .codecov.yaml
       - any-glob-to-any-file: .chglog.yml
       - any-glob-to-any-file: .golangci.yml
       - any-glob-to-any-file: .goreleaser.yaml
       - any-glob-to-any-file: .markdownlint.yaml
+      - any-glob-to-any-file: "**/.markdownlint-cli2.yaml"
       - any-glob-to-any-file: .prettierrc.yaml
       - any-glob-to-any-file: .yamlfmt.yml
       - any-glob-to-any-file: .yamllint.yml
       - any-glob-to-any-file: changelog.yaml
+      - any-glob-to-any-file: cliff.toml
       - any-glob-to-any-file: scripts/**.sh
 
 docker:
@@ -60,3 +69,9 @@ code-quality:
 # Add 'feature' label to any PR where the head branch name starts with `feature` or has a `feature` section in the name
 feature:
   - head-branch: ["^feature", "feature"]
+fix:
+  - head-branch: ["^fix", "fix"]
+chore:
+  - head-branch: ["^chore", "chore"]
+docs:
+  - head-branch: ["^docs", "docs"]
