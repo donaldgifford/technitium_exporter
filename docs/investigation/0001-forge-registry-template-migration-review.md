@@ -29,6 +29,8 @@ created: 2026-08-02
   - [H-7. CHANGELOG.md is stale — the drift check fails right now](#h-7-changelogmd-is-stale--the-drift-check-fails-right-now)
   - [H-8. just lint-md fails — the markdownlint config is never loaded](#h-8-just-lint-md-fails--the-markdownlint-config-is-never-loaded)
   - [H-9. trufflehog.yml pins a tag that does not exist](#h-9-trufflehogyml-pins-a-tag-that-does-not-exist)
+  - [H-10. ci.yml's SBOM glob never matches what goreleaser emits](#h-10-ciymls-sbom-glob-never-matches-what-goreleaser-emits)
+  - [H-11. goreleaser snapshot archives are named vv0.0.0-dev](#h-11-goreleaser-snapshot-archives-are-named-vv000-dev)
   - [M-1. The coverage gate is a no-op — it gates internal/, which does not exist](#m-1-the-coverage-gate-is-a-no-op--it-gates-internal-which-does-not-exist)
   - [M-2. cliff.toml renders PR links literally — $${2} is over-escaped](#m-2-clifftoml-renders-pr-links-literally--2-is-over-escaped)
   - [M-3. yamllint ignores .github/ entirely](#m-3-yamllint-ignores-github-entirely)
@@ -299,6 +301,56 @@ workflow gained the `name:`, `permissions:`, and `concurrency:` blocks every
 other workflow has (its job was previously named `test`, which is why the
 failing check showed up as an anonymous "test").
 
+### H-10. `ci.yml`'s SBOM glob never matches what goreleaser emits
+
+**Found after this investigation concluded**, by the first green-ish CI run on
+PR #28. The `build` job's "Locate archive SBOM" step exits 1 with
+`no linux_amd64 archive SBOM found in dist/`.
+
+The glob is `dist/technitium_exporter_*_linux_amd64.tar.gz.spdx.json`. What
+`.goreleaser.yml` actually produces is:
+
+```text
+technitium_exporter-v0.3.0-dev-linux-x86_64.tar.gz.sbom.spdx.json
+```
+
+Three independent mismatches, each from a non-default setting in
+`.goreleaser.yml` that the workflow was never reconciled against:
+
+| Axis      | Glob expects | `archives.name_template` / `sboms.documents` emits |
+| --------- | ------------ | -------------------------------------------------- |
+| Separator | `_`          | `-`                                                |
+| Arch      | `amd64`      | `x86_64` (explicitly remapped in the template)     |
+| Suffix    | `.spdx.json` | `.sbom.spdx.json`                                  |
+
+The failure then cascades: the "Upload SBOM scan SARIF" step is guarded with a
+bare `if: always()`, so it runs anyway and fails a second time with
+`Input required and not supplied: sarif_file` — masking the real cause behind a
+more confusing one.
+
+So the archive SBOM has never been vulnerability-scanned, and the
+`anchore-archive-sbom` SARIF category has never been populated.
+
+Verified by running `goreleaser release --snapshot --clean` locally: the old
+glob matches 0 files, `dist/*-linux-x86_64.tar.gz.sbom.spdx.json` matches
+exactly 1.
+
+Fixed on PR #28, along with the `always()` guard.
+
+### H-11. goreleaser snapshot archives are named `vv0.0.0-dev`
+
+Spotted in the same CI log —
+`technitium_exporter-vv0.0.0-dev-linux-x86_64.tar.gz`, with a doubled `v`.
+
+`snapshot.version_template` was `"{{ .Tag }}-dev"`, and `.Tag` already carries
+its `v` prefix, while `archives.name_template` prepends another via
+`-v{{ .Version }}-`. Real tagged releases are unaffected — goreleaser strips the
+prefix for `.Version` — so this only ever showed up in snapshot artifacts, which
+is why it survived review.
+
+Fixed on PR #28 by switching the template to `{{ trimprefix .Tag "v" }}-dev`;
+the local snapshot now produces `technitium_exporter-v0.3.0-dev-...`.
+
 ### M-1. The coverage gate is a no-op — it gates `internal/`, which does not exist
 
 `justfile:84` filters packages on `{{ go_package }}/internal/`. This repo has no
@@ -557,7 +609,7 @@ prefixes) for the behaviour to be preserved. Worth a spot-check after deletion.
 
 **Answer:** The migration is structurally sound but not landable as-is.
 
-Nine high-severity issues break real behaviour, and they cluster exactly where
+Eleven high-severity issues break real behaviour, and they cluster exactly where
 predicted. The Docker layer is the worst of it: four separate defects (H-3, H-4,
 H-5, H-6) mean the image pipeline has never successfully run end-to-end with
 correct metadata, and two of them make the recipes unreachable or hard-fail. The

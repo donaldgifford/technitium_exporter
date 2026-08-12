@@ -150,16 +150,21 @@ jobs:
           version: "~> v2"
           args: release --snapshot --skip=publish --skip=sign --clean
 
-      # The archive name_template embeds the version, so the SBOM filename is
-      # not knowable ahead of time (e.g. technitium_exporter_v0.0.0-dev_linux_amd64.tar.gz.spdx.json
-      # for snapshots, technitium_exporter_0.1.0_linux_amd64... for tags). Resolve it by glob.
+      # The archive name_template embeds the version, so the SBOM filename is not
+      # knowable ahead of time -- resolve it by glob. The pattern must match what
+      # .goreleaser.yml actually emits, which is NOT the goreleaser default:
+      #   - archives.name_template joins with "-", not "_"
+      #   - it maps amd64 -> x86_64
+      #   - sboms.documents appends ".sbom.spdx.json", not ".spdx.json"
+      # i.e. technitium_exporter-v0.3.0-dev-linux-x86_64.tar.gz.sbom.spdx.json
+      # Verified against a local `goreleaser release --snapshot` run.
       - name: Locate archive SBOM
         id: sbom
         run: |
           shopt -s nullglob
-          files=(dist/technitium_exporter_*_linux_amd64.tar.gz.spdx.json)
+          files=(dist/*-linux-x86_64.tar.gz.sbom.spdx.json)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "::error::no linux_amd64 archive SBOM found in dist/"
+            echo "::error::no linux/amd64 archive SBOM found in dist/"
             ls -la dist/ || true
             exit 1
           fi
@@ -174,8 +179,11 @@ jobs:
           fail-build: false
           output-format: sarif
 
+      # Guarded on the scan actually producing a file: a bare `always()` here
+      # turns any upstream failure into a second, misleading error
+      # ("Input required and not supplied: sarif_file").
       - name: Upload SBOM scan SARIF
-        if: always()
+        if: always() && steps.scan-sbom.outputs.sarif != ''
         uses: github/codeql-action/upload-sarif@v4.35.5
         with:
           sarif_file: ${{ steps.scan-sbom.outputs.sarif }}

@@ -55,7 +55,7 @@ created: 2026-08-02
 
 ## Objective
 
-Remediate the 31 findings from INV-0001 so the `chore/update-deps` branch is
+Remediate the 33 findings from INV-0001 so the `chore/update-deps` branch is
 mergeable, then retire `Makefile` in favour of `justfile`.
 
 **Implements:** INV-0001
