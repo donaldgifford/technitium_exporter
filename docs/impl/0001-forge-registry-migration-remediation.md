@@ -55,7 +55,7 @@ created: 2026-08-02
 
 ## Objective
 
-Remediate the 30 findings from INV-0001 so the `chore/update-deps` branch is
+Remediate the 31 findings from INV-0001 so the `chore/update-deps` branch is
 mergeable, then retire `Makefile` in favour of `justfile`.
 
 **Implements:** INV-0001
@@ -75,7 +75,8 @@ Today it fails at `just lint-md`, the first step of `just ci`.
 
 - Rotating the leaked Technitium API token and purging it from git history
   (INV-0001 H-1)
-- Fixing all 8 high-severity findings (H-1 … H-8)
+- Fixing all 9 high-severity findings (H-1 … H-9; H-9 is already fixed on PR
+  #28, where CI surfaced it)
 - Fixing the 10 medium findings (M-1 … M-10)
 - Fixing the 12 low findings (L-1 … L-12)
 - Porting the 5 unported `Makefile` targets to `justfile` and deleting

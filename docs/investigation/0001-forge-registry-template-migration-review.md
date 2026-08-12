@@ -28,6 +28,7 @@ created: 2026-08-02
   - [H-6. docker buildx bake with no target fails — no default group](#h-6-docker-buildx-bake-with-no-target-fails--no-default-group)
   - [H-7. CHANGELOG.md is stale — the drift check fails right now](#h-7-changelogmd-is-stale--the-drift-check-fails-right-now)
   - [H-8. just lint-md fails — the markdownlint config is never loaded](#h-8-just-lint-md-fails--the-markdownlint-config-is-never-loaded)
+  - [H-9. trufflehog.yml pins a tag that does not exist](#h-9-trufflehogyml-pins-a-tag-that-does-not-exist)
   - [M-1. The coverage gate is a no-op — it gates internal/, which does not exist](#m-1-the-coverage-gate-is-a-no-op--it-gates-internal-which-does-not-exist)
   - [M-2. cliff.toml renders PR links literally — $${2} is over-escaped](#m-2-clifftoml-renders-pr-links-literally--2-is-over-escaped)
   - [M-3. yamllint ignores .github/ entirely](#m-3-yamllint-ignores-github-entirely)
@@ -270,6 +271,34 @@ leaving 23 that need hand edits: 21× MD040 (code fences with no language), 1×
 MD041, 1× MD024. Separately, `prettier --check "**/*.md"` — the second half of
 `just lint-md` — fails on 13 files.
 
+### H-9. `trufflehog.yml` pins a tag that does not exist
+
+**Found after this investigation concluded**, by the first real CI run on PR #28
+— not by the pre-merge sweep, which is the point worth recording.
+
+`trufflesecurity/trufflehog@v3` fails at action-resolution time:
+
+```text
+##[error]Unable to resolve action `trufflesecurity/trufflehog@v3`,
+unable to find version `v3`
+```
+
+TruffleHog publishes no moving `v3` tag and no `v3` branch — only concrete
+`v3.x.y` releases (latest `v3.96.0`). The job dies in ~2s before checkout, so
+**the repo has never actually been secret-scanned**, which is a pointed thing to
+learn on the PR that removes a leaked credential.
+
+Why the sweep missed it: the tag-existence check was assembled by reading the
+workflows for `uses:` lines and hand-listing them, and `trufflehog.yml` was
+skipped. A `grep`-driven list rather than a hand-built one would have caught it.
+The lesson generalises — `actionlint` passes clean here too, because it
+validates workflow _syntax_, not whether a referenced ref resolves.
+
+Fixed on PR #28: pinned to `v3.96.0` with a `# renovate:` annotation, plus the
+workflow gained the `name:`, `permissions:`, and `concurrency:` blocks every
+other workflow has (its job was previously named `test`, which is why the
+failing check showed up as an anonymous "test").
+
 ### M-1. The coverage gate is a no-op — it gates `internal/`, which does not exist
 
 `justfile:84` filters packages on `{{ go_package }}/internal/`. This repo has no
@@ -463,9 +492,9 @@ Worth recording, since it bounds the blast radius:
 - `just lint-actions` (actionlint over all 11 workflows) — clean, exit 0.
 - `just release-check` — goreleaser config validates.
 - `just license-check` — passes (warnings only, non-Go files in deps).
-- All 23 pinned GitHub Action tags resolve via the API — no phantom versions,
-  including the less-obvious `actions/checkout@v7` and
-  `actions/upload-artifact@v7`.
+- 23 of the 24 pinned GitHub Action tags resolve via the API, including the
+  less-obvious `actions/checkout@v7` and `actions/upload-artifact@v7`. The
+  exception is H-9 below, which this sweep missed.
 - `dependabot.yml`'s `open-pull-requests-limit: 0` security-only mode, and the
   `pull_request_target` severity labeler (which correctly checks out no code),
   are both right.
@@ -528,7 +557,7 @@ prefixes) for the behaviour to be preserved. Worth a spot-check after deletion.
 
 **Answer:** The migration is structurally sound but not landable as-is.
 
-Eight high-severity issues break real behaviour, and they cluster exactly where
+Nine high-severity issues break real behaviour, and they cluster exactly where
 predicted. The Docker layer is the worst of it: four separate defects (H-3, H-4,
 H-5, H-6) mean the image pipeline has never successfully run end-to-end with
 correct metadata, and two of them make the recipes unreachable or hard-fail. The
