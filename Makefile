@@ -32,9 +32,16 @@ CUR_VERSION ?= $(shell git describe --tags --exact-match 2>/dev/null || git desc
 COVERAGE_OUT := coverage.out
 
 
-## Technitium Variables for testing
-TECHNITIUM_URL := "http://10.10.10.194:5380"
-TECHNITIUM_TOKEN := "a69a978f1f3b38dd2c59d2923fa97c4595bbd02f2469e52f4181a673b5650b8c"
+## Technitium connection for local testing.
+## Never hardcode credentials here -- this file is tracked. Put them in a
+## gitignored .env at the repo root, or export them in your shell:
+##
+##   TECHNITIUM_URL=http://dns.example.com:5380
+##   TECHNITIUM_TOKEN=<api-token>
+##
+-include .env
+export TECHNITIUM_URL
+export TECHNITIUM_TOKEN
 
 ###############
 ##@ Go Development
@@ -42,7 +49,7 @@ TECHNITIUM_TOKEN := "a69a978f1f3b38dd2c59d2923fa97c4595bbd02f2469e52f4181a673b56
 .PHONY: build
 .PHONY: test test-all test-coverage
 .PHONY: lint lint-fix fmt clean
-.PHONY: run run-local test-api ci check
+.PHONY: run run-local test-api require-technitium ci check
 .PHONY: release-check release-local
 .PHONY: govulncheck trivy syft security
 
@@ -105,17 +112,24 @@ clean: ## Remove build artifacts
 
 ## Application Services
 
-run: ## Run CLI command
-	@ $(MAKE) --no-print-directory log-$@
-	TECHNITIUM_URL=$(TECHNITIUM_URL) TECHNITIUM_TOKEN=$(TECHNITIUM_TOKEN) ./build/bin/technitium_exporter
+require-technitium: ## Verify Technitium credentials are set
+	@if [ -z "$(TECHNITIUM_URL)" ] || [ -z "$(TECHNITIUM_TOKEN)" ]; then \
+		echo "Error: TECHNITIUM_URL and TECHNITIUM_TOKEN must be set."; \
+		echo "Put them in a gitignored .env at the repo root, or export them:"; \
+		echo "  export TECHNITIUM_URL=http://dns.example.com:5380"; \
+		echo "  export TECHNITIUM_TOKEN=<api-token>"; \
+		exit 1; \
+	fi
 
-run-local: build ## Run exporter with local config
+run: require-technitium ## Run CLI command
 	@ $(MAKE) --no-print-directory log-$@
-	@$(BIN_DIR)/$(PROJECT_NAME) \
-		--technitium.url=$(TECHNITIUM_URL) \
-		--technitium.token=$(TECHNITIUM_TOKEN)
+	@./build/bin/technitium_exporter
 
-test-api: ## Test Technitium API connectivity
+run-local: require-technitium build ## Run exporter with local config
+	@ $(MAKE) --no-print-directory log-$@
+	@$(BIN_DIR)/$(PROJECT_NAME)
+
+test-api: require-technitium ## Test Technitium API connectivity
 	@curl -s "$(TECHNITIUM_URL)/api/settings/get?token=$(TECHNITIUM_TOKEN)" | jq .
 	@curl -s "$(TECHNITIUM_URL)/api/dashboard/stats/get?token=$(TECHNITIUM_TOKEN)&type=LastHour" | jq .
 

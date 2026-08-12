@@ -56,3 +56,6 @@ dist/
 
 # donald-loop runtime state
 .claude/donald-loop.local.md
+
+# Scratch file holding the literal secret for git-filter-repo (never commit)
+.token-to-purge

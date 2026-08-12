@@ -175,20 +175,20 @@ technitium_exporter_scrape_success 1
 
 ### Environment Variables
 
-| Variable           | Required | Default    | Description                                              |
-| ------------------ | -------- | ---------- | -------------------------------------------------------- |
-| `TECHNITIUM_URL`   | Yes      | -          | Technitium server URL (e.g., `http://10.10.10.194:5380`) |
-| `TECHNITIUM_TOKEN` | Yes      | -          | API token from Technitium                                |
-| `LISTEN_ADDRESS`   | No       | `:9167`    | Address to listen on                                     |
-| `METRICS_PATH`     | No       | `/metrics` | Path for metrics endpoint                                |
-| `LOG_LEVEL`        | No       | `info`     | Log level (debug, info, warn, error)                     |
-| `SCRAPE_TIMEOUT`   | No       | `10s`      | Timeout for Technitium API calls                         |
+| Variable           | Required | Default    | Description                                                 |
+| ------------------ | -------- | ---------- | ----------------------------------------------------------- |
+| `TECHNITIUM_URL`   | Yes      | -          | Technitium server URL (e.g., `http://dns.example.com:5380`) |
+| `TECHNITIUM_TOKEN` | Yes      | -          | API token from Technitium                                   |
+| `LISTEN_ADDRESS`   | No       | `:9167`    | Address to listen on                                        |
+| `METRICS_PATH`     | No       | `/metrics` | Path for metrics endpoint                                   |
+| `LOG_LEVEL`        | No       | `info`     | Log level (debug, info, warn, error)                        |
+| `SCRAPE_TIMEOUT`   | No       | `10s`      | Timeout for Technitium API calls                            |
 
 ### Command Line Flags
 
 ```bash
 technitium-exporter \
-  --technitium.url=http://10.10.10.194:5380 \
+  --technitium.url=http://dns.example.com:5380 \
   --technitium.token=xxx \
   --web.listen-address=:9167 \
   --web.metrics-path=/metrics \
@@ -213,7 +213,7 @@ ENTRYPOINT ["/technitium-exporter"]
 
 ```bash
 docker run -d \
-  -e TECHNITIUM_URL=http://10.10.10.194:5380 \
+  -e TECHNITIUM_URL=http://dns.example.com:5380 \
   -e TECHNITIUM_TOKEN=xxx \
   -p 9167:9167 \
   ghcr.io/donaldgifford/technitium-exporter:latest
@@ -265,7 +265,7 @@ spec:
           image: ghcr.io/donaldgifford/technitium-exporter:latest
           env:
             - name: TECHNITIUM_URL
-              value: "http://10.10.10.194:5380"
+              value: "http://dns.example.com:5380"
             - name: TECHNITIUM_TOKEN
               valueFrom:
                 secretKeyRef:
