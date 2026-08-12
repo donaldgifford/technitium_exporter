@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
 project_name: technitium_exporter
 
@@ -135,4 +136,4 @@ release:
     **Full Changelog**: https://github.com/donaldgifford/technitium_exporter/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 snapshot:
-  version_template: "{{ .Tag }}-dev"
+  version_template: "{{ trimprefix .Tag \"v\" }}-dev"

@@ -1,0 +1,8 @@
+.git
+.github
+docs
+dist
+*.md
+.vscode
+.idea
+.claude

@@ -175,14 +175,14 @@ technitium_exporter_scrape_success 1
 
 ### Environment Variables
 
-| Variable           | Required | Default    | Description                                              |
-| ------------------ | -------- | ---------- | -------------------------------------------------------- |
+| Variable           | Required | Default    | Description                                                 |
+| ------------------ | -------- | ---------- | ----------------------------------------------------------- |
 | `TECHNITIUM_URL`   | Yes      | -          | Technitium server URL (e.g., `http://dns.example.com:5380`) |
-| `TECHNITIUM_TOKEN` | Yes      | -          | API token from Technitium                                |
-| `LISTEN_ADDRESS`   | No       | `:9167`    | Address to listen on                                     |
-| `METRICS_PATH`     | No       | `/metrics` | Path for metrics endpoint                                |
-| `LOG_LEVEL`        | No       | `info`     | Log level (debug, info, warn, error)                     |
-| `SCRAPE_TIMEOUT`   | No       | `10s`      | Timeout for Technitium API calls                         |
+| `TECHNITIUM_TOKEN` | Yes      | -          | API token from Technitium                                   |
+| `LISTEN_ADDRESS`   | No       | `:9167`    | Address to listen on                                        |
+| `METRICS_PATH`     | No       | `/metrics` | Path for metrics endpoint                                   |
+| `LOG_LEVEL`        | No       | `info`     | Log level (debug, info, warn, error)                        |
+| `SCRAPE_TIMEOUT`   | No       | `10s`      | Timeout for Technitium API calls                            |
 
 ### Command Line Flags
 

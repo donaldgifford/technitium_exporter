@@ -1,14 +1,12 @@
 ---
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: PR Label Check
-
 on:
   pull_request:
     types: [opened, labeled, unlabeled, synchronize]
-
 permissions:
   pull-requests: write
   issues: write
-
 jobs:
   check-labels:
     name: Check Required Labels
