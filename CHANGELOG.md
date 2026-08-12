@@ -9,6 +9,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(makefile)* Remove hardcoded Technitium credentials
 - *(ci)* Pin trufflehog to v3.96.0, harden workflow
+- *(ci)* Correct SBOM glob, changelog escaping, snapshot version
 
 ### Miscellaneous Tasks
 
