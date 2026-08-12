@@ -13,6 +13,7 @@ created: 2026-08-02
 **Status:** Concluded **Author:** Donald Gifford **Date:** 2026-08-02
 
 <!--toc:start-->
+
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -125,8 +126,8 @@ Severity: **H** = breaks or misleads today, **M** = works but wrong or fragile,
 `Makefile:36-37` hardcodes a real server address and API token:
 
 ```makefile
-TECHNITIUM_URL := "http://dns.example.com:5380"
-TECHNITIUM_TOKEN := "REDACTED-ROTATED-CREDENTIAL"
+TECHNITIUM_URL := "http://<internal-dns-host>:5380"
+TECHNITIUM_TOKEN := "<64-hex-char-api-token>"
 ```
 
 Verified present in history (`git log -S`) at commit `00d895e "testing the ci"`,

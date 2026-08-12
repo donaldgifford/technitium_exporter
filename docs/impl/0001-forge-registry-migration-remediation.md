@@ -117,8 +117,8 @@ so they can be closed rather than rebased.
 
 #### Tasks
 
-- [ ] Revoke the exposed token `a69a978f…50b8c` in the Technitium admin UI and
-      issue a replacement
+- [ ] Revoke the exposed token (see `Makefile` at commit `00d895e`) in the
+      Technitium admin UI and issue a replacement
 - [ ] Confirm the old token is rejected:
       `curl -s "$URL/api/settings/get?token=<old>"` returns an auth failure
 - [ ] Audit the DNS server for use of the old token between `00d895e` and
@@ -126,7 +126,8 @@ so they can be closed rather than rebased.
 - [ ] Remove the `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` assignments from
       `Makefile` (the file itself is deleted in Phase 5)
 - [ ] Purge the token from history with `git filter-repo` (OQ-1a), e.g.
-      `git filter-repo --replace-text <(echo 'a69a978f…50b8c==>REDACTED')`
+      `git filter-repo --replace-text .token-to-purge` with a
+      `<token>==>REDACTED` line in that gitignored file
 - [ ] Close the 6 superseded Dependabot PRs (#22, #23, #24, #25, #26, #27) with
       a note pointing at this branch
 - [ ] Force-push the rewritten history and confirm GitHub's UI no longer shows
@@ -135,9 +136,9 @@ so they can be closed rather than rebased.
 
 #### Success Criteria
 
-- `git log -S "REDACTED-ROTATED-CREDENTIAL" --all`
-  returns zero commits
-- `grep -r "a69a978f" .` returns nothing outside `.git`
+- `git log -S "$(cat .token-to-purge)" --all` returns zero commits (keep the
+  literal in a gitignored scratch file; do not paste it into a tracked doc)
+- `grep -rF "$(cat .token-to-purge)" .` returns nothing outside `.git`
 - The old token is confirmed rejected by the live server
 - No open PR references a pre-rewrite SHA
 
