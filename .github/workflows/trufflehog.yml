@@ -1,13 +1,26 @@
 ---
 # yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+# TruffleHog publishes no moving `v3` tag or branch -- only concrete v3.x.y
+# releases -- so this must be pinned to an exact version. `@v3` fails the run
+# at action-resolution time with "unable to find version `v3`".
+name: Secret Scanning
+
 on:
   push:
     branches:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  trufflehog:
+    name: Scan for secrets
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -15,6 +28,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Secret Scanning
-        uses: trufflesecurity/trufflehog@v3
+        # renovate: datasource=github-releases depName=trufflesecurity/trufflehog
+        uses: trufflesecurity/trufflehog@v3.96.0
         with:
           extra_args: --results=verified,unknown
