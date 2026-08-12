@@ -48,7 +48,7 @@ recurse_submodules = false
 use_branch_tags = false
 
 commit_preprocessors = [
-  { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#$${2}](<REPO>/issues/$${2}))" },
+  { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))" },
 ]
 
 commit_parsers = [
