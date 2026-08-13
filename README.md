@@ -115,10 +115,10 @@ git clone https://github.com/donaldgifford/technitium_exporter.git
 cd technitium_exporter
 
 # Build
-make build
+just build
 
 # Run tests
-make test
+just test
 
 # Build packages (requires goreleaser)
 goreleaser release --snapshot --clean

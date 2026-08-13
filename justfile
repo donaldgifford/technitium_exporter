@@ -4,6 +4,12 @@
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
+# Replaces the Makefile's `-include .env`. Recipes that talk to a live
+# Technitium server read TECHNITIUM_URL / TECHNITIUM_TOKEN from the
+# environment; .env is gitignored and is the only place credentials belong.
+# Missing .env is not an error -- recipes that need it say so themselves.
+set dotenv-load := true
+
 # Docker recipes live in their own file; without this import none of the
 # docker-* recipes exist at all.
 import 'docker.just'
@@ -65,10 +71,42 @@ clean:
 
 # ─── Run ────────────────────────────────────────────────────────────
 
-# Build then run the CLI: just run plan -config-dir ./approved-providers
+# Build then run the exporter: just run --web.listen-address=:9167
 [group('run')]
 run *ARGS: build
     @{{ bin_dir }}/{{ project_name }} {{ ARGS }}
+
+# Build then run the exporter against a live server (needs .env or exported creds)
+[group('run')]
+run-local: _require-technitium build
+    @{{ bin_dir }}/{{ project_name }}
+
+# Probe the Technitium API directly: settings, then last-hour stats, through jq
+[group('run')]
+test-api: _require-technitium
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # -f so an HTTP error status fails the recipe instead of piping an error
+    # body into jq and exiting 0. The token travels in the query string
+    # because that is the only auth the Technitium API offers -- see issue #6.
+    curl -sf "${TECHNITIUM_URL}/api/settings/get?token=${TECHNITIUM_TOKEN}" | jq .
+    curl -sf "${TECHNITIUM_URL}/api/dashboard/stats/get?token=${TECHNITIUM_TOKEN}&type=LastHour" | jq .
+
+# Fail with instructions unless Technitium credentials are present.
+[private]
+_require-technitium:
+    #!/usr/bin/env bash
+    # `set -u` from the shell setting would abort on the unset variable before
+    # the check could run, hence the :- defaults.
+    set -euo pipefail
+    if [ -z "${TECHNITIUM_URL:-}" ] || [ -z "${TECHNITIUM_TOKEN:-}" ]; then
+      echo "✗ TECHNITIUM_URL and TECHNITIUM_TOKEN must be set." >&2
+      echo "  Put them in a gitignored .env at the repo root (loaded" >&2
+      echo "  automatically), or export them in your shell:" >&2
+      echo "    TECHNITIUM_URL=http://dns.example.com:5380" >&2
+      echo "    TECHNITIUM_TOKEN=<api-token>" >&2
+      exit 1
+    fi
 
 # ─── Test ───────────────────────────────────────────────────────────
 
@@ -220,6 +258,26 @@ fmt-md:
 [group('security')]
 govulncheck:
     @govulncheck ./...
+
+# Scan the dependency tree for HIGH/CRITICAL CVEs
+[group('security')]
+trivy:
+    @trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .
+
+# Run every security scanner: govulncheck (call-graph aware) + trivy (CVEs)
+[group('security')]
+security: govulncheck trivy
+    @echo "✓ All security checks passed"
+
+# Generate SPDX + CycloneDX SBOMs into build/
+[group('security')]
+syft:
+    @# Deliberately not part of `just security`: an SBOM is an artifact to
+    @# publish, not a check that can pass or fail.
+    @mkdir -p {{ build_dir }}
+    @syft dir:. --output spdx-json={{ build_dir }}/sbom.spdx.json \
+        --output cyclonedx-json={{ build_dir }}/sbom.cdx.json
+    @echo "✓ SBOMs generated in {{ build_dir }}/"
 
 # Check dependency licenses against the allow list
 [group('security')]

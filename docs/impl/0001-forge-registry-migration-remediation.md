@@ -359,35 +359,55 @@ Neither `run-local` nor `test-api` may carry the hardcoded credentials forward
 
 #### Tasks
 
-- [ ] Re-add the `trivy` pin to `mise.toml` with a `# renovate:` annotation
-      matching the surrounding style
-- [ ] Add `just trivy` —
+- [x] Re-add the `trivy` pin to `mise.toml` with a `# renovate:` annotation
+      matching the surrounding style — pinned `0.73.0`, matching the explicit
+      pins used for the other linters rather than `latest`
+- [x] Add `just trivy` —
       `trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .`
-- [ ] Add `just syft` — SBOM generation (SPDX + CycloneDX) into `build/`
-- [ ] Add `just security` — composite of `govulncheck` + `trivy`
-- [ ] Add `just run-local` reading `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` from
+- [x] Add `just syft` — SBOM generation (SPDX + CycloneDX) into `build/`
+- [x] Add `just security` — composite of `govulncheck` + `trivy`
+- [x] Add `just run-local` reading `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` from
       the environment, with a clear error when unset
-- [ ] Add `just test-api` — the two `curl` calls through `jq`, same env sourcing
-- [ ] Fix `justfile`'s `run` recipe (L-10): replace the donor-repo doc comment
+- [x] Add `just test-api` — the two `curl` calls through `jq`, same env
+      sourcing. Added `curl -f` while porting: without it an HTTP error status
+      pipes the error body into `jq` and the recipe exits 0
+- [x] Fix `justfile`'s `run` recipe (L-10): replace the donor-repo doc comment
       ("just run plan -config-dir ./approved-providers") and source credentials
       from the environment
-- [ ] Spot-check that `just fmt-go` preserves `make fmt`'s local-import grouping
+- [x] Spot-check that `just fmt-go` preserves `make fmt`'s local-import grouping
       — `Makefile` passed `-local github.com/donaldgifford` explicitly;
       `just fmt-go` relies on `.golangci.yml`'s `gci`/`goimports` prefixes to do
-      the same
-- [ ] `git rm Makefile`
-- [ ] Remove both `Makefile` entries from `.github/labeler.yml`'s `ci` section
+      the same. Verified by scrambling `collector/collector.go`'s import block
+      (local first, third-party interleaved with stdlib) and confirming
+      `just fmt-go` restores it byte-identically
+- [x] `git rm Makefile`
+- [x] Remove both `Makefile` entries from `.github/labeler.yml`'s `ci` section
       (it is listed twice — L-8), keep `justfile`
-- [ ] Grep the repo for surviving `make` references and update them
+- [x] Grep the repo for surviving `make` references and update them
+- [x] **(unplanned)** Add `set dotenv-load := true`. The `Makefile` had
+      `-include .env`; without an equivalent, the ported credential recipes
+      would only ever work from an already-exported shell
+- [x] **(unplanned)** Add `*.just` to `.github/labeler.yml`'s `ci` globs — Phase
+      3 split the recipes across `justfile` and `docker.just`, and the
+      `justfile` glob does not match the latter
+- [x] **(unplanned)** Replace the four `Bash(make …)` entries in
+      `.claude/settings.json` with `Bash(just *)`
 
 #### Success Criteria
 
-- `Makefile` is gone and `git grep -n "make "` returns no stale instructions
-- `just security`, `just trivy`, `just syft` all run to completion
+- `Makefile` is gone and `git grep -n "make "` returns no stale instructions —
+  **met**. Completed planning and verification records (`docs/MVP.md`,
+  `docs/exporter-enhancements-*`, `docs/security-tooling-plan.md`,
+  `docs/review/`, and the drafted Support request) deliberately keep their
+  `make` references: they record what was actually run at the time, and
+  rewriting them would falsify the record
+- `just security`, `just trivy`, `just syft` all run to completion — **met**,
+  trivy reports 0 vulnerabilities in `go.mod`, syft writes both SBOMs
 - `just run-local` fails with a clear message when credentials are unset, and
-  works when they are
+  works when they are — **met** for the guard; the live-server half is not
+  exercised here because the token is pending rotation (Phase 1 owner action)
 - Every command documented in CLAUDE.md's build section resolves to a real
-  `just` recipe
+  `just` recipe — **met**, all 13 verified via `just --show`
 
 ---
 

@@ -28,9 +28,8 @@ documentation:
 ci:
   - changed-files:
       - any-glob-to-any-file: .github/**
-      - any-glob-to-any-file: Makefile
       - any-glob-to-any-file: justfile
-      - any-glob-to-any-file: Makefile
+      - any-glob-to-any-file: "*.just"
 
 repo:
   - changed-files:

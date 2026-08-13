@@ -10,38 +10,47 @@ Prometheus format.
 
 ## Build Commands
 
-Requires Go 1.25.7+ (managed via mise).
+Requires Go 1.26.5+ and `just` (both managed via mise). The `Makefile` was
+removed in favour of `justfile`; `just --list` is the menu.
 
 ```bash
 # Build the binary
-make build
+just build
 # or: go build -o build/bin/technitium_exporter ./cmd/technitium_exporter
 
 # Run tests
-make test
-# or: go test -v -race ./...
+just test
+# or: go test -race ./...
 
-# Run tests with coverage
-make test-coverage
+# Run tests with coverage, then enforce the per-package floor
+just test-coverage
+just coverage-gate
 
-# Lint code
-make lint
+# Lint code (Go, YAML, Markdown, GitHub Actions)
+just lint
 
 # Format code
-make fmt
+just fmt
 
-# Run local with test server
-make run-local
+# Run against a live server (needs TECHNITIUM_URL/TECHNITIUM_TOKEN in .env)
+just run-local
 
 # Build release packages (snapshot)
-make release-local
+just release-local
 
 # Security scanning
-make security        # Run govulncheck + trivy
-make govulncheck     # Go source-level vulnerability check
-make trivy           # Dependency CVE scan (HIGH/CRITICAL)
-make syft            # Generate SBOMs (SPDX + CycloneDX) to build/
+just security        # Run govulncheck + trivy
+just govulncheck     # Go source-level vulnerability check
+just trivy           # Dependency CVE scan (HIGH/CRITICAL)
+just syft            # Generate SBOMs (SPDX + CycloneDX) to build/
+
+# Everything CI runs, locally
+just ci
 ```
+
+Credentials for `just run-local` and `just test-api` come from a gitignored
+`.env` at the repo root (loaded automatically via `set dotenv-load`), or from
+exported shell variables. Never commit them.
 
 ## Running the Exporter
 
@@ -228,14 +237,14 @@ docker run --rm -v ./dist:/dist debian:bookworm-slim \
 
 Four-tool security stack managed via mise:
 
-| Tool        | Purpose                                          | Make target                    |
+| Tool        | Purpose                                          | Recipe                         |
 | ----------- | ------------------------------------------------ | ------------------------------ |
 | gosec       | Go source security patterns                      | Integrated via `golangci-lint` |
-| govulncheck | Source-level Go vuln analysis (call-graph aware) | `make govulncheck`             |
-| trivy       | Dependency CVE scanning (HIGH/CRITICAL gating)   | `make trivy`                   |
-| syft        | SBOM generation (SPDX + CycloneDX)               | `make syft`                    |
+| govulncheck | Source-level Go vuln analysis (call-graph aware) | `just govulncheck`             |
+| trivy       | Dependency CVE scanning (HIGH/CRITICAL gating)   | `just trivy`                   |
+| syft        | SBOM generation (SPDX + CycloneDX)               | `just syft`                    |
 
-- `make security` runs govulncheck + trivy (not syft -- SBOM is artifact
+- `just security` runs govulncheck + trivy (not syft -- SBOM is artifact
   generation, not a check)
 - CI runs govulncheck (`golang/govulncheck-action@v1`) and trivy
   (`aquasecurity/trivy-action@0.33.1`) on every PR
