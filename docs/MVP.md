@@ -46,7 +46,7 @@ exporter.
 
 **Request:**
 
-```
+```http
 GET /api/dashboard/stats/get?token=<token>&type=LastHour
 ```
 
@@ -81,7 +81,7 @@ GET /api/dashboard/stats/get?token=<token>&type=LastHour
 
 **Request:**
 
-```
+```http
 GET /api/settings/get?token=<token>
 ```
 
@@ -192,7 +192,7 @@ technitium_scrape_duration_seconds 0.023
 
 ## Architecture
 
-```
+```text
 technitium_exporter/
 ├── cmd/
 │   └── technitium_exporter/

@@ -43,7 +43,7 @@ from settings uptime). No new API calls are needed.
 
 **Metric output:**
 
-```
+```text
 technitium_queries_by_record_type_total{record_type="A"} 4023
 technitium_queries_by_record_type_total{record_type="AAAA"} 2577
 technitium_queries_by_record_type_total{record_type="TXT"} 798
@@ -73,7 +73,7 @@ technitium_queries_by_record_type_total{record_type="TXT"} 798
 
 **Metric output:**
 
-```
+```text
 technitium_queries_by_protocol_total{protocol="udp"} 8336
 technitium_queries_by_protocol_total{protocol="tcp"} 317
 ```
@@ -102,7 +102,7 @@ technitium_queries_by_protocol_total{protocol="tcp"} 317
 
 **Metric output:**
 
-```
+```text
 technitium_top_clients{client="10.10.11.18", rate_limited="false"} 2298
 technitium_top_clients{client="10.10.11.1", rate_limited="false"} 1456
 technitium_top_clients{client="10.10.10.50", rate_limited="true"} 892
@@ -133,7 +133,7 @@ technitium_top_clients{client="10.10.10.50", rate_limited="true"} 892
 
 **Metric output:**
 
-```
+```text
 technitium_top_domains{domain="api.github.com"} 136
 technitium_top_domains{domain="dns.google"} 98
 ```
@@ -159,7 +159,7 @@ technitium_top_domains{domain="dns.google"} 98
 
 **Metric output:**
 
-```
+```text
 technitium_top_blocked_domains{domain="stats.grafana.org"} 1426
 technitium_top_blocked_domains{domain="telemetry.example.com"} 312
 ```

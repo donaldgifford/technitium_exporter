@@ -18,7 +18,7 @@ as a reference when building new Prometheus exporters.
 
 ## Project Structure
 
-```
+```text
 cmd/<exporter_name>/
     main.go                 # Entry point, flag parsing, HTTP server, graceful shutdown
 collector/
@@ -52,7 +52,7 @@ contrib/
 The collector is the core of a Prometheus exporter. It implements
 `prometheus.Collector` with two methods: `Describe` and `Collect`.
 
-### Key Rules
+### Key Rules — Collector
 
 - Define metric descriptors once in the constructor using `prometheus.NewDesc`
 - Use `prometheus.BuildFQName(namespace, subsystem, name)` for consistent naming
@@ -253,7 +253,7 @@ func (c *Client) GetStats(ctx context.Context) (*StatsResponse, error) {
 }
 ```
 
-### Key Rules
+### Key Rules — API Client
 
 - Context as first parameter, always
 - Wrap all errors with `%w` and descriptive context
@@ -596,7 +596,7 @@ deb:
 
 Suppress expected warnings for Go static binaries:
 
-```
+```text
 myservice-exporter: statically-linked-binary [usr/bin/myservice_exporter]
 ```
 

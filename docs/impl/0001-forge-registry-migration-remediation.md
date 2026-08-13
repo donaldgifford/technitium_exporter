@@ -13,6 +13,7 @@ created: 2026-08-02
 **Status:** Draft **Author:** Donald Gifford **Date:** 2026-08-02
 
 <!--toc:start-->
+
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -257,34 +258,48 @@ violations that the missing config had been hiding; `--fix` clears 27, leaving
 
 ##### Changelog (H-7, M-2)
 
-- [ ] Fix `cliff.toml:50` — `$${2}` → `${2}` in `commit_preprocessors` (`$$` is
+- [x] Fix `cliff.toml:50` — `$${2}` → `${2}` in `commit_preprocessors` (`$$` is
       an escaped literal `$` in the Rust regex replacer, so PR links currently
-      render as `[#${2}](…/issues/${2})`)
+      render as `[#${2}](…/issues/${2})`) — landed in PR #28
 - [ ] Run `just changelog` and commit the regenerated `CHANGELOG.md`
 - [ ] Verify `just changelog-check` exits 0
-- [ ] Confirm `CHANGELOG.md` is listed in `.prettierignore` so `just fmt-md`
-      cannot reflow it back into drift
+- [x] Confirm `CHANGELOG.md` is listed in `.prettierignore` so `just fmt-md`
+      cannot reflow it back into drift — landed in PR #28
 
 ##### Markdown lint (H-8)
 
-- [ ] `git mv .markdowncilint.yml .markdownlint.yaml` — **not**
+- [x] `git mv .markdowncilint.yml .markdownlint.yaml` — **not**
       `.markdownlint-cli2.yaml`; the file holds top-level plain rules
       (`MD013: false`, …), which is the format `.markdownlint.yaml` expects.
       Verified both ways: the cli2 wrapper name ignores top-level rules and
       MD013 keeps firing
-- [ ] Run `prettier --write "**/*.md"` first, then `markdownlint-cli2 --fix`
+- [x] Run `prettier --write "**/*.md"` first, then `markdownlint-cli2 --fix`
       (prettier's blank-line handling resolves most MD031/MD032 before
       markdownlint has to)
-- [ ] Hand-fix the 21 MD040 violations by adding a language to each bare code
+- [x] Hand-fix the 21 MD040 violations by adding a language to each bare code
       fence
-- [ ] Fix `MAINTAINERS.md:1` MD041 (add a top-level heading)
-- [ ] Fix `docs/llms.md:256` MD024 (duplicate "Key Rules" heading)
-- [ ] Add the docz-generated surfaces to `.prettierignore` (OQ-3a): the 6
-      `docs/*/README.md` index files, and whatever is needed to stop prettier
-      fighting the `<!--toc:start-->` block docz injects into every doc body.
-      Confirm the fix by running `docz update` then `just lint-md` and checking
-      that order no longer matters
-- [ ] Verify `just lint-md` exits 0
+- [x] Fix `MAINTAINERS.md:1` MD041 (add a top-level heading)
+- [x] Fix `docs/llms.md:256` MD024 (duplicate "Key Rules" heading)
+- [x] Stop prettier fighting the docz-generated surfaces (OQ-3a). Implemented
+      **not** via `.prettierignore` as planned — that is whole-file only, and
+      the 6 `docs/*/README.md` index files are mostly hand-written prose that
+      should stay formatted. Wrapped each `<!-- BEGIN/END DOCZ -->` block in
+      `<!-- prettier-ignore-start -->` / `<!-- prettier-ignore-end -->` instead,
+      which sits outside the region `docz update` rewrites and so survives
+      regeneration. Verified: `docz update` twice in a row is a no-op, and
+      `just lint-md` passes in either order
+- [x] Verify `just lint-md` exits 0
+- [x] **(unplanned)** Add `.markdownlint-cli2.yaml` carrying `ignores:`.
+      `.markdownlintignore` is a markdownlint-**cli** (v1) feature and is
+      silently ignored by cli2, so the first attempt at excluding `CHANGELOG.md`
+      and `.claude/` changed nothing. cli2 options and lint rules are separate
+      files: rules stay in `.markdownlint.yaml`, `ignores` has to live in the
+      cli2 config
+- [x] **(unplanned)** Delete the stray second, empty
+      `<!-- BEGIN/END DOCZ AUTO-GENERATED -->` pair at the tail of
+      `docs/investigation/README.md` and `docs/plan/README.md`. Pre-existing;
+      `docz update` populates the first pair only, so the second was dead weight
+      that a future `docz` could have filled instead
 
 ##### Coverage gate (M-1)
 

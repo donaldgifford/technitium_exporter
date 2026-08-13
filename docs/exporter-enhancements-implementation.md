@@ -150,7 +150,7 @@ collector. Update `NewCollector` signature to accept `topEntries bool`.
 1. Add `--collector.top-entries` flag (after line 40, in the flag definition
    area):
 
-   ```
+   ```go
    topEntries := app.Flag("collector.top-entries",
        "Enable top clients/domains/blocked domains metrics.").
        Default("true").Bool()
@@ -232,6 +232,7 @@ is a mechanical find-and-replace in `collector/collector_test.go`.
    ```
 
 4. **Uptime** -- after the existing settings handling block (around line 177):
+
    ```go
    if settingsErr == nil {
        startTime, err := time.Parse(time.RFC3339, settings.Response.Uptimestamp)
@@ -320,7 +321,7 @@ verifying the 6 new metrics.
 6. **Add `TestCollector_QueriesByRecordType`** -- verify record type metrics
    using `testutil.CollectAndCompare` against `highTrafficStatsJSON()`:
 
-   ```
+   ```text
    technitium_queries_by_record_type_total{record_type="A"} 800000
    technitium_queries_by_record_type_total{record_type="AAAA"} 500000
    ...
@@ -328,7 +329,7 @@ verifying the 6 new metrics.
 
 7. **Add `TestCollector_QueriesByProtocol`** -- verify protocol metrics:
 
-   ```
+   ```text
    technitium_queries_by_protocol_total{protocol="udp"} 1400000
    technitium_queries_by_protocol_total{protocol="tcp"} 123456
    ```
@@ -337,7 +338,7 @@ verifying the 6 new metrics.
 
 8. **Add `TestCollector_TopClients`** -- verify top clients metrics:
 
-   ```
+   ```text
    technitium_top_clients_hits{client="10.0.0.1",rate_limited="false"} 250000
    technitium_top_clients_hits{client="10.0.0.2",rate_limited="true"} 180000
    ```
@@ -431,7 +432,7 @@ the collector logic.
 
 ## Dependency Graph
 
-```
+```text
 Phase 1 (types)
     |
     v

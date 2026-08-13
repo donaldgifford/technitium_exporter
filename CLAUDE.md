@@ -60,7 +60,7 @@ export TECHNITIUM_TOKEN=your-api-token
 
 ## Architecture
 
-```
+```text
 cmd/technitium_exporter/    # Entry point, CLI parsing, HTTP server setup
 collector/                  # Prometheus collector (MustNewConstMetric pattern)
 config/                     # Configuration handling (flags + env vars)

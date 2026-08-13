@@ -27,6 +27,7 @@ docz create impl "Your Implementation Title"
 - **Paused**: Work is temporarily stopped
 - **Cancelled**: Plan was abandoned
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All Implementation Plans
 
@@ -34,3 +35,4 @@ docz create impl "Your Implementation Title"
 |----|-------|--------|------|--------|------|
 | IMPL-0001 | Forge-registry migration remediation | Draft | 2026-08-02 | Donald Gifford | [0001-forge-registry-migration-remediation.md](0001-forge-registry-migration-remediation.md) |
 <!-- END DOCZ AUTO-GENERATED -->
+<!-- prettier-ignore-end -->

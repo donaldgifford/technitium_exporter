@@ -178,7 +178,7 @@ App can't be installed.
 
 ### Syslog Pipeline
 
-```
+```text
 Technitium DNS Server (Log Exporter App)
     │
     │ syslog (UDP/TCP) -- JSON payload in syslog envelope
@@ -199,7 +199,7 @@ Technitium DNS Server (Log Exporter App)
 
 ### File Tail Pipeline
 
-```
+```text
 Technitium DNS Server (Log Exporter App)
     │
     │ writes dns_logs.json (JSON Lines)
