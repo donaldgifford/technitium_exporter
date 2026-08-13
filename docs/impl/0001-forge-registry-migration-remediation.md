@@ -261,8 +261,12 @@ violations that the missing config had been hiding; `--fix` clears 27, leaving
 - [x] Fix `cliff.toml:50` — `$${2}` → `${2}` in `commit_preprocessors` (`$$` is
       an escaped literal `$` in the Rust regex replacer, so PR links currently
       render as `[#${2}](…/issues/${2})`) — landed in PR #28
-- [ ] Run `just changelog` and commit the regenerated `CHANGELOG.md`
-- [ ] Verify `just changelog-check` exits 0
+- [x] Run `just changelog` and commit the regenerated `CHANGELOG.md`
+- [x] Verify `just changelog-check` exits 0 — the sync commit itself is excluded
+      by `cliff.toml`'s `^chore.*[Cc]hangelog` skip parser, so regenerating does
+      not immediately re-stale the file. Note the standing friction this
+      implies: every PR needs a trailing `chore(changelog):` commit (see
+      Phase 6)
 - [x] Confirm `CHANGELOG.md` is listed in `.prettierignore` so `just fmt-md`
       cannot reflow it back into drift — landed in PR #28
 
@@ -321,15 +325,25 @@ violations that the missing config had been hiding; `--fix` clears 27, leaving
       `internal/` prefix had, one rename away from returning: without it, a typo
       in `gated_packages` retires the gate and still exits 0
 
+##### Housekeeping
+
+- [x] **(unplanned)** Prefix the explanatory comments inside the `build` and
+      `fmt-go` recipe bodies with `@`. `just` echoes every un-prefixed recipe
+      line before running it, comments included, so the Phase 2 comments were
+      being printed into every local and CI build log
+
 #### Success Criteria
 
-- `just lint-md` exits 0
-- `just changelog-check` exits 0
+- `just lint-md` exits 0 — **met**, 31 files, 0 errors, prettier clean
+- `just changelog-check` exits 0 — **met**
 - `just coverage-gate` reports at least one real package, and a deliberately
-  raised floor makes it fail
-- `just ci` passes end to end — the first time on this branch
+  raised floor makes it fail — **met**: reports `collector` 96.9% and
+  `pkg/technitium` 91.5%; fails at floor 95 (one package), at floor 99 (both),
+  on a stale package name, and when `coverage.out` is absent
+- `just ci` passes end to end — the first time on this branch — **met**, exit 0
 - A test commit of the form `feat: thing (#42)` renders as a working link in
-  regenerated changelog output
+  regenerated changelog output — **met**, renders as
+  `[#42](https://github.com/donaldgifford/technitium_exporter/issues/42)`
 
 ---
 
