@@ -131,15 +131,24 @@ so they can be closed rather than rebased.
       `<token>==>REDACTED` line in that gitignored file
 - [ ] Close the 6 superseded Dependabot PRs (#22, #23, #24, #25, #26, #27) with
       a note pointing at this branch
-- [ ] Force-push the rewritten history and confirm GitHub's UI no longer shows
-      the token at `00d895e`
+- [ ] Force-push the rewritten history
+- [ ] File the GitHub Support request to GC unreachable objects and drop the
+      stale `refs/pull/*` refs (draft at
+      `.github/SUPPORT-REQUEST-purge-unreachable-objects.md`) — the force-push
+      alone does NOT evict them
+- [ ] Re-enable the `main` repository ruleset (id 12379777), disabled to permit
+      the force-push
+- [ ] After Support confirms, verify `00d895e` no longer resolves, then delete
+      the drafted ticket and the pre-purge backup bundle in `~`
 - [ ] Store the new token in a gitignored `.env` (never in a tracked file)
 
 #### Success Criteria
 
-- `git log -S "$(cat .token-to-purge)" --all` returns zero commits (keep the
-  literal in a gitignored scratch file; do not paste it into a tracked doc)
-- `grep -rF "$(cat .token-to-purge)" .` returns nothing outside `.git`
+- A fresh clone contains zero blobs with the credential (done — verified
+  2026-08-12)
+- `gh api "repos/.../contents/Makefile?ref=00d895e"` no longer returns the token
+  — this is the criterion that distinguishes a rewritten branch from an actually
+  purged repo, and it is **not** satisfied by the force-push alone
 - The old token is confirmed rejected by the live server
 - No open PR references a pre-rewrite SHA
 
@@ -538,12 +547,37 @@ rewritten to be unconditional.
 | OQ-9  | Commit `.claude/settings.json`, ignore the rest of `.claude/`       | Phase 7  |
 | OQ-10 | Phase 1 as its own PR, then Phases 2-5 together                     | Sequence |
 
-**OQ-1 — history purge.** `git filter-repo` is the only option that actually
-removes the secret from a public repo, and the blast radius here is unusually
-small: sole owner, no forks, no external contributors. The 6 open Dependabot PRs
-are superseded by this branch and get closed rather than rebased, so nothing is
-left pointing at a pre-rewrite SHA. Rotation still happens first and is what
-actually protects the server.
+**OQ-1 — history purge.** Chose `git filter-repo` + force-push. Executed
+2026-08-12; `main` is now `dfee94e`, 36 commits, zero blobs containing the
+credential, all three tags rewritten and reachable.
+
+**The reasoning behind this choice was partly wrong, and the outcome fell short
+of it.** The claim was that filter-repo "is the only option that actually
+removes the secret from a public repo." On GitHub that is false. All 18
+`refs/pull/N/head` refs still point into the pre-rewrite history, and GitHub
+serves any object in the store by SHA — so the credential remained retrievable
+at `00d895e` after the rewrite:
+
+```bash
+gh api "repos/donaldgifford/technitium_exporter/contents/Makefile?ref=00d895e"
+# decoded line 37 still contained the token
+```
+
+Verified that no client-side remedy exists. All three are refused:
+
+| Attempt                                      | Result                       |
+| -------------------------------------------- | ---------------------------- |
+| `git push origin --delete refs/pull/22/head` | `deny updating a hidden ref` |
+| `gh api -X DELETE .../pulls/22`              | 404 — no such endpoint       |
+| force-update a PR ref to a clean commit      | `deny updating a hidden ref` |
+
+So on GitHub, options (a) and (b) differ far less than stated: a rewrite alone
+evicts nothing. Eviction requires GitHub Support to GC unreachable objects and
+drop the stale PR refs — tracked as a Phase 1 task, with the ticket drafted at
+`.github/SUPPORT-REQUEST-purge-unreachable-objects.md`.
+
+**Rotation is the control that actually matters**, and that was true before the
+rewrite as well. The rewrite is hygiene; rotation is the fix.
 
 **OQ-2 — `docker-push`.** Deleted. It duplicates `docker-buildx`, and its bake
 invocation contradicts itself (`--push` against a `type=docker` output). Pushes

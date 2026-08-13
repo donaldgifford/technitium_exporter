@@ -11,6 +11,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(ci)* Pin trufflehog to v3.96.0, harden workflow
 - *(ci)* Correct SBOM glob, changelog escaping, snapshot version
 
+### Documentation
+
+- Correct OQ-1 claim, add GitHub Support request
+
 ### Miscellaneous Tasks
 
 - Update repo
