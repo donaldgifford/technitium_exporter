@@ -10,10 +10,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(makefile)* Remove hardcoded Technitium credentials
 - *(ci)* Pin trufflehog to v3.96.0, harden workflow
 - *(ci)* Correct SBOM glob, changelog escaping, snapshot version
+- *(build)* Inject version metadata with the correct ldflag symbols
+- *(docker)* Wire up the image pipeline end to end
+- *(lint)* Make markdownlint config discoverable and the tree clean
+- *(test)* Make the coverage gate gate something
 
 ### Documentation
 
 - Correct OQ-1 claim, add GitHub Support request
+- *(inv)* Record L-13, kingpin --version writes to stderr
 
 ### Miscellaneous Tasks
 
