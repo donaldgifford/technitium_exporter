@@ -28,6 +28,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Miscellaneous Tasks
 
 - Update repo
+- Harden workflows -- concurrency, version pinning, dedup
 
 ## [0.3.0] - 2026-02-12
 
