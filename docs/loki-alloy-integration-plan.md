@@ -620,7 +620,7 @@ response time panels that were previously uncertain:
 ### Phase 3: Polish
 
 1. **Test all three deployment tiers** -- Prometheus-only, +Log Exporter, +Log
-    Exporter+API
+   Exporter+API
 2. **Final documentation pass**
 3. **Enable EDNS logging** and add block reason panels if EDE data is useful
 

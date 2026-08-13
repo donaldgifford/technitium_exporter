@@ -13,7 +13,6 @@ created: 2026-08-02
 **Status:** Draft **Author:** Donald Gifford **Date:** 2026-08-02
 
 <!--toc:start-->
-
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -118,39 +117,49 @@ so they can be closed rather than rebased.
 
 #### Tasks
 
-- [ ] Revoke the exposed token (see `Makefile` at commit `00d895e`) in the
-      Technitium admin UI and issue a replacement
-- [ ] Confirm the old token is rejected:
-      `curl -s "$URL/api/settings/get?token=<old>"` returns an auth failure
-- [ ] Audit the DNS server for use of the old token between `00d895e` and
-      revocation, to the extent the logs allow
-- [ ] Remove the `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` assignments from
-      `Makefile` (the file itself is deleted in Phase 5)
-- [ ] Purge the token from history with `git filter-repo` (OQ-1a), e.g.
-      `git filter-repo --replace-text .token-to-purge` with a
-      `<token>==>REDACTED` line in that gitignored file
-- [ ] Close the 6 superseded Dependabot PRs (#22, #23, #24, #25, #26, #27) with
+Repo-side work landed 2026-08-12 (PR #28, PR #29). The remaining items are
+owner-actions on the DNS server and on GitHub Support; they are **deferred by
+explicit decision**, not forgotten, and do not block Phases 2-8.
+
+- [x] Remove the `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` assignments from
+      `Makefile` (the file itself is deleted in Phase 5) — PR #28, replaced with
+      `-include .env` and a `require-technitium` guard
+- [x] Purge the token from history with `git filter-repo` (OQ-1a) — `main`
+      rewritten to `dfee94e`, 36 commits, zero blobs containing the credential
+- [x] Close the 6 superseded Dependabot PRs (#22, #23, #24, #25, #26, #27) with
       a note pointing at this branch
-- [ ] Force-push the rewritten history
-- [ ] File the GitHub Support request to GC unreachable objects and drop the
-      stale `refs/pull/*` refs (draft at
-      `.github/SUPPORT-REQUEST-purge-unreachable-objects.md`) — the force-push
-      alone does NOT evict them
-- [ ] Re-enable the `main` repository ruleset (id 12379777), disabled to permit
-      the force-push
-- [ ] After Support confirms, verify `00d895e` no longer resolves, then delete
-      the drafted ticket and the pre-purge backup bundle in `~`
-- [ ] Store the new token in a gitignored `.env` (never in a tracked file)
+- [x] Force-push the rewritten history — `main` and all three tags
+- [x] Draft the GitHub Support request to GC unreachable objects and drop the
+      stale `refs/pull/*` refs
+      (`.github/SUPPORT-REQUEST-purge-unreachable-objects.md`)
+- [ ] **[owner]** Revoke the exposed token in the Technitium admin UI and issue
+      a replacement, then store it in a gitignored `.env`
+- [ ] **[owner]** Confirm the old token is rejected, and audit the DNS server
+      for its use between `00d895e` and revocation
+- [ ] **[owner]** Submit the drafted Support ticket — the force-push alone does
+      NOT evict the objects; all 18 `refs/pull/N/head` refs still hold them, and
+      no client-side removal is possible
+- [ ] **[owner]** Re-enable the `main` repository ruleset (id 12379777),
+      disabled to permit the force-push and still `disabled` as of 2026-08-12
+- [ ] **[owner]** After Support confirms, verify `00d895e` no longer resolves,
+      then delete the drafted ticket and the pre-purge backup bundle in `~` (the
+      bundle contains the original credential)
 
 #### Success Criteria
 
-- A fresh clone contains zero blobs with the credential (done — verified
-  2026-08-12)
+- A fresh clone contains zero blobs with the credential — **met**, verified
+  2026-08-12
+- No open PR references a pre-rewrite SHA — **met**, all 6 closed and branches
+  deleted
 - `gh api "repos/.../contents/Makefile?ref=00d895e"` no longer returns the token
-  — this is the criterion that distinguishes a rewritten branch from an actually
-  purged repo, and it is **not** satisfied by the force-push alone
-- The old token is confirmed rejected by the live server
-- No open PR references a pre-rewrite SHA
+  — **not met**, and not achievable client-side. This is the criterion that
+  distinguishes a rewritten branch from an actually purged repo; it needs the
+  Support ticket
+- The old token is confirmed rejected by the live server — **not met**, owner
+  action
+
+Phase 1 is therefore _complete for everything doable in this repo_ and open on
+four owner-actions. Phases 2-8 proceed independently.
 
 ---
 
@@ -167,24 +176,27 @@ correctly and is not changed.
 
 #### Tasks
 
-- [ ] `justfile:31` — change `-X main.version/commit/date` to
+- [x] `justfile:31` — change `-X main.version/commit/date` to
       `-X main.Version/Commit/BuildDate`
-- [ ] `Dockerfile:16` — same symbol rename
-- [ ] `Dockerfile:16` — change `$${VERSION}` / `$${COMMIT}` / `$${DATE}` to a
+- [x] `Dockerfile:16` — same symbol rename
+- [x] `Dockerfile:16` — change `$${VERSION}` / `$${COMMIT}` / `$${DATE}` to a
       single `$` (`RUN` is not on Docker's substitution list, so `$$` reaches
       the shell and expands to its PID)
-- [ ] `docker-bake.hcl` — add an `args` block to `_common` mapping `VERSION`,
+- [x] `docker-bake.hcl` — add an `args` block to `_common` mapping `VERSION`,
       `COMMIT`, `DATE` to the existing `VERSION` / `COMMIT_SHA` / `BUILD_DATE`
       bake variables
-- [ ] Verify the three ldflag symbol names against `main.go` rather than against
+- [x] Verify the three ldflag symbol names against `main.go` rather than against
       each other
-- [ ] Re-check that `just build`'s success `echo` reports the version actually
+- [x] Re-check that `just build`'s success `echo` reports the version actually
       compiled in, not the `just` variable
 
 #### Success Criteria
 
 - `just build && ./build/bin/technitium_exporter --version` prints a real
-  version, commit, and date — not `dev (commit: none, built: unknown)`
+  version, commit, and date — not `dev (commit: none, built: unknown)`. **Met**
+  — now reports `v0.3.0-9-g2a89950-dirty (commit: 2a89950, built: ...)`. Note
+  kingpin writes `--version` to **stderr**, not stdout, so the recipe's
+  verification echo needs `2>&1`; see H-12 in INV-0001
 - `docker buildx bake dev --print` shows an `args` key on the target
 - The version string contains no `{VERSION}` fragment and no bare PID
 

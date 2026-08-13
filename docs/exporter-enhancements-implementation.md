@@ -10,14 +10,14 @@ exposes server uptime from the settings endpoint. No new API calls are needed.
 
 **New metrics:**
 
-| Metric | Type | Source |
-|--------|------|--------|
-| `technitium_queries_by_record_type_total` | Counter | `queryTypeChartData` |
-| `technitium_queries_by_protocol_total` | Counter | `protocolTypeChartData` |
-| `technitium_top_clients_hits` | Gauge | `topClients` |
-| `technitium_top_domains_hits` | Gauge | `topDomains` |
-| `technitium_top_blocked_domains_hits` | Gauge | `topBlockedDomains` |
-| `technitium_server_uptime_seconds` | Gauge | `settings.uptimestamp` |
+| Metric                                    | Type    | Source                  |
+| ----------------------------------------- | ------- | ----------------------- |
+| `technitium_queries_by_record_type_total` | Counter | `queryTypeChartData`    |
+| `technitium_queries_by_protocol_total`    | Counter | `protocolTypeChartData` |
+| `technitium_top_clients_hits`             | Gauge   | `topClients`            |
+| `technitium_top_domains_hits`             | Gauge   | `topDomains`            |
+| `technitium_top_blocked_domains_hits`     | Gauge   | `topBlockedDomains`     |
+| `technitium_server_uptime_seconds`        | Gauge   | `settings.uptimestamp`  |
 
 ---
 
@@ -47,12 +47,14 @@ new types for top-N entries.
    - `Hits int64 json:"hits"`
 
 **Design notes:**
+
 - `map[string]int64` for chart data because keys are dynamic (API may return new
   record types or protocols without code changes)
 - `TopClient` is separate from `TopEntry` because of the `rateLimited` field
 - `TopEntry` is reused for both `topDomains` and `topBlockedDomains`
 
 **Success criteria:**
+
 - [x] `go build ./...` compiles
 - [x] `go vet ./...` passes
 - [x] Existing tests still pass: `go test ./pkg/technitium/...`
@@ -78,12 +80,14 @@ new types for top-N entries.
    - Assert `len(TopBlockedDomains)` and first entry's `Name`, `Hits`
 
 2. Add `TestStatsResponse_EmptyChartData` test:
-   - JSON fixture with `stats` only (no chart data fields) -- verifies
-     backward compatibility (maps should be nil, slices should be nil)
+   - JSON fixture with `stats` only (no chart data fields) -- verifies backward
+     compatibility (maps should be nil, slices should be nil)
 
 **Success criteria:**
+
 - [x] `go test -v -run TestStatsResponse_ChartData ./pkg/technitium/...` passes
-- [x] `go test -v -run TestStatsResponse_EmptyChartData ./pkg/technitium/...` passes
+- [x] `go test -v -run TestStatsResponse_EmptyChartData ./pkg/technitium/...`
+      passes
 - [x] All existing client tests still pass
 
 ---
@@ -109,8 +113,10 @@ collector. Update `NewCollector` signature to accept `topEntries bool`.
    - `topEntriesEnabled bool`
 
 3. Update `NewCollector` signature (line 39):
-   - From: `func NewCollector(client *technitium.Client, logger *slog.Logger) *Collector`
-   - To: `func NewCollector(client *technitium.Client, logger *slog.Logger, topEntries bool) *Collector`
+   - From:
+     `func NewCollector(client *technitium.Client, logger *slog.Logger) *Collector`
+   - To:
+     `func NewCollector(client *technitium.Client, logger *slog.Logger, topEntries bool) *Collector`
 
 4. Add descriptor initializations in `NewCollector`:
    - `queriesByRecordType`: always initialized
@@ -136,11 +142,14 @@ collector. Update `NewCollector` signature to accept `topEntries bool`.
    - Add `ch <- c.queriesByRecordType`
    - Add `ch <- c.queriesByProtocol`
    - Add `ch <- c.uptimeSeconds`
-   - Guarded: `if c.topEntriesEnabled { ch <- c.topClients; ch <- c.topDomains; ch <- c.topBlockedDomains }`
+   - Guarded:
+     `if c.topEntriesEnabled { ch <- c.topClients; ch <- c.topDomains; ch <- c.topBlockedDomains }`
 
 **Changes to `cmd/technitium_exporter/main.go`:**
 
-1. Add `--collector.top-entries` flag (after line 40, in the flag definition area):
+1. Add `--collector.top-entries` flag (after line 40, in the flag definition
+   area):
+
    ```
    topEntries := app.Flag("collector.top-entries",
        "Enable top clients/domains/blocked domains metrics.").
@@ -152,10 +161,11 @@ collector. Update `NewCollector` signature to accept `topEntries bool`.
    - To: `collector.NewCollector(client, logger, *topEntries)`
 
 **Success criteria:**
+
 - [x] `go build ./...` compiles
 - [x] `go vet ./...` passes
 - [x] Existing tests compile (will need NewCollector call sites updated -- see
-  note below)
+      note below)
 
 **Note:** All existing test call sites of `NewCollector(client, logger)` will
 break because the signature changes. These must be updated to
@@ -173,6 +183,7 @@ is a mechanical find-and-replace in `collector/collector_test.go`.
 **Changes to `Collect()` (after line 206):**
 
 1. **Query type chart data** -- iterate `stats.Response.QueryTypeChartData`:
+
    ```go
    for recordType, count := range stats.Response.QueryTypeChartData {
        ch <- prometheus.MustNewConstMetric(
@@ -182,7 +193,9 @@ is a mechanical find-and-replace in `collector/collector_test.go`.
    }
    ```
 
-2. **Protocol type chart data** -- iterate `stats.Response.ProtocolTypeChartData`:
+2. **Protocol type chart data** -- iterate
+   `stats.Response.ProtocolTypeChartData`:
+
    ```go
    for protocol, count := range stats.Response.ProtocolTypeChartData {
        ch <- prometheus.MustNewConstMetric(
@@ -193,6 +206,7 @@ is a mechanical find-and-replace in `collector/collector_test.go`.
    ```
 
 3. **Top entries** -- guarded by `c.topEntriesEnabled`:
+
    ```go
    if c.topEntriesEnabled {
        for _, client := range stats.Response.TopClients {
@@ -231,11 +245,12 @@ is a mechanical find-and-replace in `collector/collector_test.go`.
    ```
 
 **Success criteria:**
+
 - [x] `go build ./...` compiles
 - [x] `go vet ./...` passes
 - [x] `make lint` passes (no new golangci-lint issues)
 - [x] Existing tests still pass (no new data in fixtures yet, so new loops are
-  no-ops on nil maps/slices)
+      no-ops on nil maps/slices)
 
 ---
 
@@ -250,6 +265,7 @@ verifying the 6 new metrics.
 
 1. **Update `realWorldStatsJSON()`** -- add chart data fields to the `response`
    object (after the `stats` block):
+
    ```json
    "queryTypeChartData": {"A": 40, "AAAA": 25, "PTR": 5, "TXT": 2},
    "protocolTypeChartData": {"UDP": 65, "TCP": 7},
@@ -268,6 +284,7 @@ verifying the 6 new metrics.
 
 2. **Update `highTrafficStatsJSON()`** -- add chart data fields with larger
    numbers:
+
    ```json
    "queryTypeChartData": {"A": 800000, "AAAA": 500000, "TXT": 100000, "HTTPS": 50000, "PTR": 30000, "SRV": 2000},
    "protocolTypeChartData": {"UDP": 1400000, "TCP": 123456},
@@ -302,6 +319,7 @@ verifying the 6 new metrics.
 
 6. **Add `TestCollector_QueriesByRecordType`** -- verify record type metrics
    using `testutil.CollectAndCompare` against `highTrafficStatsJSON()`:
+
    ```
    technitium_queries_by_record_type_total{record_type="A"} 800000
    technitium_queries_by_record_type_total{record_type="AAAA"} 500000
@@ -309,13 +327,16 @@ verifying the 6 new metrics.
    ```
 
 7. **Add `TestCollector_QueriesByProtocol`** -- verify protocol metrics:
+
    ```
    technitium_queries_by_protocol_total{protocol="udp"} 1400000
    technitium_queries_by_protocol_total{protocol="tcp"} 123456
    ```
+
    (Note: label values are lowercased)
 
 8. **Add `TestCollector_TopClients`** -- verify top clients metrics:
+
    ```
    technitium_top_clients_hits{client="10.0.0.1",rate_limited="false"} 250000
    technitium_top_clients_hits{client="10.0.0.2",rate_limited="true"} 180000
@@ -346,6 +367,7 @@ verifying the 6 new metrics.
       `len(resp.Response.TopClients)`, etc.
 
 **Success criteria:**
+
 - [x] `go test -v -race ./collector/...` -- all tests pass
 - [x] `go test -v -race ./pkg/technitium/...` -- all tests pass
 - [x] `make test` -- full test suite green
@@ -358,6 +380,7 @@ verifying the 6 new metrics.
 **Goal:** Run the complete CI-equivalent check locally.
 
 **Commands:**
+
 ```bash
 make fmt
 make lint
@@ -367,13 +390,15 @@ make security
 ```
 
 **Success criteria:**
+
 - [x] `make fmt` -- no formatting changes
 - [x] `make lint` -- clean (0 issues)
 - [x] `make test-coverage` -- all tests pass (collector: 97.8%, client: 91.5%)
 - [x] `make build` -- binary builds successfully
-- [x] `make security` -- no vulnerabilities (govulncheck clean, trivy 0 findings)
+- [x] `make security` -- no vulnerabilities (govulncheck clean, trivy 0
+      findings)
 - [x] Manual smoke test: run the built binary against a test server (if
-  available) and curl `/metrics` to verify new metrics appear
+      available) and curl `/metrics` to verify new metrics appear
 
 ---
 
@@ -386,6 +411,7 @@ focused and reviewable. The dashboard JSON changes are large and independent of
 the collector logic.
 
 **Files (when ready):**
+
 - `CLAUDE.md` -- add 6 new metrics to the table
 - `contrib/grafana/technitium-dashboard.json` -- add panels:
   - Query Types piechart (donut)
@@ -396,6 +422,7 @@ the collector logic.
   - Server Uptime stat panel
 
 **Success criteria:**
+
 - [ ] CLAUDE.md metrics table matches actual output
 - [ ] Dashboard imports without errors in Grafana
 - [ ] All new panels render with data

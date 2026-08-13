@@ -27,10 +27,18 @@ _default:
 # Build the CLI binary into build/bin/technitium_exporter
 [group('build')]
 build:
+    # Symbol names must match the vars in cmd/technitium_exporter/main.go
+    # (Version/Commit/BuildDate, capitalised). The linker silently ignores -X
+    # for a symbol it cannot resolve, so a typo here fails open: the build
+    # succeeds and the binary reports "dev" forever.
     @mkdir -p {{ bin_dir }}
-    @go build -ldflags "-X main.version={{ version }} -X main.commit={{ commit_hash }} -X main.date={{ build_date }}" \
+    @go build -ldflags "-X main.Version={{ version }} -X main.Commit={{ commit_hash }} -X main.BuildDate={{ build_date }}" \
         -o {{ bin_dir }}/{{ project_name }} ./cmd/{{ project_name }}
-    @echo "✓ Built {{ bin_dir }}/{{ project_name }} ({{ version }})"
+    # Report what the binary actually says, not what `just` thinks it passed --
+    # a wrong -X symbol is silently dropped by the linker, so echoing the just
+    # variable here would have hidden exactly the bug this recipe used to have.
+    # kingpin writes --version to stderr, hence the redirect.
+    @echo "✓ Built {{ bin_dir }}/{{ project_name }} ($({{ bin_dir }}/{{ project_name }} --version 2>&1))"
 
 # Remove build artifacts, release output, and the coverage profile
 [group('build')]

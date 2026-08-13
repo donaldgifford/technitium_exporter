@@ -1,1 +1,1 @@
-* Donald Gifford <dgifford@pm.me> @donaldgifford
+- Donald Gifford <dgifford@pm.me> @donaldgifford

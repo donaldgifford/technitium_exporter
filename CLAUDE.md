@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
 
 ## Project Overview
 
-Prometheus exporter for Technitium DNS Server. Exposes DNS server metrics in Prometheus format.
+Prometheus exporter for Technitium DNS Server. Exposes DNS server metrics in
+Prometheus format.
 
 ## Build Commands
 
@@ -74,15 +76,19 @@ scripts/                    # Utility scripts (labels.sh)
 ```
 
 **Key patterns:**
-- Collector uses `MustNewConstMetric` per Prometheus best practices (no direct instrumentation)
+
+- Collector uses `MustNewConstMetric` per Prometheus best practices (no direct
+  instrumentation)
 - Concurrent API calls to stats and settings endpoints
 - Graceful shutdown with signal handling
-- HTTP server with timeouts (ReadHeaderTimeout, ReadTimeout, WriteTimeout, IdleTimeout)
+- HTTP server with timeouts (ReadHeaderTimeout, ReadTimeout, WriteTimeout,
+  IdleTimeout)
 - Tests use `httptest.Server` for HTTP-level mocking (no interface mocking)
 
 ## Testing
 
-Tests use `net/http/httptest` to mock HTTP responses at the transport level, following Prometheus exporter conventions (no mockery/interface mocking):
+Tests use `net/http/httptest` to mock HTTP responses at the transport level,
+following Prometheus exporter conventions (no mockery/interface mocking):
 
 ```go
 server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -93,31 +99,32 @@ client := technitium.NewClient(server.URL, "test-token", timeout)
 
 ## Metrics Exposed
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `technitium_up` | Gauge | Whether the server is reachable |
-| `technitium_scrape_duration_seconds` | Gauge | Time taken to scrape |
-| `technitium_server_info` | Gauge | Server info (version, domain labels) |
-| `technitium_queries_total` | Counter | Total DNS queries |
-| `technitium_responses_total` | Counter | Responses by rcode (noerror, servfail, nxdomain, refused) |
-| `technitium_queries_by_type_total` | Counter | Queries by type (authoritative, recursive, cached, blocked, dropped) |
-| `technitium_blocked_queries_total` | Counter | Total blocked queries |
-| `technitium_blocklist_domains` | Gauge | Domains in blocklists |
-| `technitium_blocked_zones` | Gauge | Blocked zones configured |
-| `technitium_allowed_zones` | Gauge | Allowed zones configured |
-| `technitium_cache_entries` | Gauge | Current cache entries |
-| `technitium_clients_total` | Gauge | Unique clients seen |
-| `technitium_zones` | Gauge | Total zones |
-| `technitium_queries_by_record_type_total` | Counter | Queries by DNS record type (A, AAAA, TXT, etc.) |
-| `technitium_queries_by_protocol_total` | Counter | Queries by transport protocol (udp, tcp, etc.) |
-| `technitium_top_clients_hits` | Gauge | Top clients by query count (gated by `--collector.top-entries`) |
-| `technitium_top_domains_hits` | Gauge | Top queried domains by hit count (gated by `--collector.top-entries`) |
-| `technitium_top_blocked_domains_hits` | Gauge | Top blocked domains by hit count (gated by `--collector.top-entries`) |
-| `technitium_server_uptime_seconds` | Gauge | Server uptime in seconds (requires admin token) |
+| Metric                                    | Type    | Description                                                           |
+| ----------------------------------------- | ------- | --------------------------------------------------------------------- |
+| `technitium_up`                           | Gauge   | Whether the server is reachable                                       |
+| `technitium_scrape_duration_seconds`      | Gauge   | Time taken to scrape                                                  |
+| `technitium_server_info`                  | Gauge   | Server info (version, domain labels)                                  |
+| `technitium_queries_total`                | Counter | Total DNS queries                                                     |
+| `technitium_responses_total`              | Counter | Responses by rcode (noerror, servfail, nxdomain, refused)             |
+| `technitium_queries_by_type_total`        | Counter | Queries by type (authoritative, recursive, cached, blocked, dropped)  |
+| `technitium_blocked_queries_total`        | Counter | Total blocked queries                                                 |
+| `technitium_blocklist_domains`            | Gauge   | Domains in blocklists                                                 |
+| `technitium_blocked_zones`                | Gauge   | Blocked zones configured                                              |
+| `technitium_allowed_zones`                | Gauge   | Allowed zones configured                                              |
+| `technitium_cache_entries`                | Gauge   | Current cache entries                                                 |
+| `technitium_clients_total`                | Gauge   | Unique clients seen                                                   |
+| `technitium_zones`                        | Gauge   | Total zones                                                           |
+| `technitium_queries_by_record_type_total` | Counter | Queries by DNS record type (A, AAAA, TXT, etc.)                       |
+| `technitium_queries_by_protocol_total`    | Counter | Queries by transport protocol (udp, tcp, etc.)                        |
+| `technitium_top_clients_hits`             | Gauge   | Top clients by query count (gated by `--collector.top-entries`)       |
+| `technitium_top_domains_hits`             | Gauge   | Top queried domains by hit count (gated by `--collector.top-entries`) |
+| `technitium_top_blocked_domains_hits`     | Gauge   | Top blocked domains by hit count (gated by `--collector.top-entries`) |
+| `technitium_server_uptime_seconds`        | Gauge   | Server uptime in seconds (requires admin token)                       |
 
 ## Code Style
 
-This project follows the Uber Go Style Guide. Key conventions enforced by `.golangci.yml`:
+This project follows the Uber Go Style Guide. Key conventions enforced by
+`.golangci.yml`:
 
 - Always check returned errors
 - Context as first parameter
@@ -131,12 +138,17 @@ This project follows the Uber Go Style Guide. Key conventions enforced by `.gola
 ## Technitium API
 
 The exporter uses two endpoints:
+
 - `/api/dashboard/stats/get?token=<token>&type=LastHour` - Query statistics
-- `/api/settings/get?token=<token>` - Server version and domain (requires admin token)
+- `/api/settings/get?token=<token>` - Server version and domain (requires admin
+  token)
 
-Note: Settings endpoint requires admin permissions. If unavailable, exporter falls back to version="unknown" with server name from stats response.
+Note: Settings endpoint requires admin permissions. If unavailable, exporter
+falls back to version="unknown" with server name from stats response.
 
-The stats endpoint returns more data than currently parsed. See `docs/exporter-enhancements-plan.md` for planned additions:
+The stats endpoint returns more data than currently parsed. See
+`docs/exporter-enhancements-plan.md` for planned additions:
+
 - `queryTypeChartData` - Query counts by DNS record type (A, AAAA, TXT, etc.)
 - `protocolTypeChartData` - Query counts by transport protocol (UDP, TCP)
 - `topClients` - Top clients with hit counts and rate-limit status
@@ -145,14 +157,19 @@ The stats endpoint returns more data than currently parsed. See `docs/exporter-e
 
 ### Technitium DNS Apps
 
-The **Log Exporter App** (installed via Technitium admin UI > Apps) provides structured JSON query logs via syslog, file, and HTTP sinks. This is used for the Loki integration (see `docs/loki-alloy-integration-plan.md`).
+The **Log Exporter App** (installed via Technitium admin UI > Apps) provides
+structured JSON query logs via syslog, file, and HTTP sinks. This is used for
+the Loki integration (see `docs/loki-alloy-integration-plan.md`).
 
 Log format (JSON Lines):
+
 ```json
 {"clientIp":"10.10.10.91","protocol":"Tcp","responseCode":"NoError","responseRtt":13.498,"responseType":"Recursive","question":{"questionName":"play.google.com","questionType":"A","questionClass":"IN"},"answers":[...],"edns":[],"timestamp":"2026-02-09T15:17:14.193Z"}
 ```
 
-Key fields: `clientIp`, `protocol` (Udp/Tcp), `responseType` (Authoritative/Cached/Recursive/Blocked), `responseCode`, `responseRtt` (ms, Recursive only), `question.questionName`, `question.questionType`.
+Key fields: `clientIp`, `protocol` (Udp/Tcp), `responseType`
+(Authoritative/Cached/Recursive/Blocked), `responseCode`, `responseRtt` (ms,
+Recursive only), `question.questionName`, `question.questionType`.
 
 ## Packaging
 
@@ -166,6 +183,7 @@ Uses goreleaser with nfpms for Debian package generation:
 - **User**: Creates `technitium_exporter` system user
 
 Package files in `deploy/deb/`:
+
 - `systemd/` - Service unit file
 - `default/` - Environment config template
 - `scripts/` - postinstall/preremove scripts
@@ -190,10 +208,13 @@ Configuration in `.chglog.yml`, data in `changelog.yml`.
 
 GitHub Actions workflows in `.github/workflows/`:
 
-- **test.yml**: Lint, test, build, package-lint (lintian), and security scan jobs
-- **release.yml**: Release automation with goreleaser (includes SBOM generation via syft)
+- **test.yml**: Lint, test, build, package-lint (lintian), and security scan
+  jobs
+- **release.yml**: Release automation with goreleaser (includes SBOM generation
+  via syft)
 
-The `package-lint` job builds deb packages and runs lintian to verify Debian policy compliance.
+The `package-lint` job builds deb packages and runs lintian to verify Debian
+policy compliance.
 
 To run lintian locally (macOS via Docker):
 
@@ -207,50 +228,60 @@ docker run --rm -v ./dist:/dist debian:bookworm-slim \
 
 Four-tool security stack managed via mise:
 
-| Tool | Purpose | Make target |
-|------|---------|-------------|
-| gosec | Go source security patterns | Integrated via `golangci-lint` |
-| govulncheck | Source-level Go vuln analysis (call-graph aware) | `make govulncheck` |
-| trivy | Dependency CVE scanning (HIGH/CRITICAL gating) | `make trivy` |
-| syft | SBOM generation (SPDX + CycloneDX) | `make syft` |
+| Tool        | Purpose                                          | Make target                    |
+| ----------- | ------------------------------------------------ | ------------------------------ |
+| gosec       | Go source security patterns                      | Integrated via `golangci-lint` |
+| govulncheck | Source-level Go vuln analysis (call-graph aware) | `make govulncheck`             |
+| trivy       | Dependency CVE scanning (HIGH/CRITICAL gating)   | `make trivy`                   |
+| syft        | SBOM generation (SPDX + CycloneDX)               | `make syft`                    |
 
-- `make security` runs govulncheck + trivy (not syft -- SBOM is artifact generation, not a check)
-- CI runs govulncheck (`golang/govulncheck-action@v1`) and trivy (`aquasecurity/trivy-action@0.33.1`) on every PR
-- Release pipeline generates SPDX SBOMs via goreleaser's `sboms` section (requires syft installed via `anchore/sbom-action/download-syft@v0`)
+- `make security` runs govulncheck + trivy (not syft -- SBOM is artifact
+  generation, not a check)
+- CI runs govulncheck (`golang/govulncheck-action@v1`) and trivy
+  (`aquasecurity/trivy-action@0.33.1`) on every PR
+- Release pipeline generates SPDX SBOMs via goreleaser's `sboms` section
+  (requires syft installed via `anchore/sbom-action/download-syft@v0`)
 
 ## Contrib
 
 Example configurations in `contrib/`:
 
 - `grafana/technitium-dashboard.json` - Grafana dashboard (light)
-- `grafana/technitium-dark-dashboard.json` - Grafana dashboard (dark, Unbound-inspired)
+- `grafana/technitium-dark-dashboard.json` - Grafana dashboard (dark,
+  Unbound-inspired)
 - `prometheus/alerts.yml` - Prometheus alerting rules
 
 ## Planning Docs
 
 Active planning documents in `docs/`:
 
-- `docs/exporter-enhancements-plan.md` - 6 new metric families from existing API data (query types, protocol, top clients/domains/blocked, uptime)
-- `docs/loki-alloy-integration-plan.md` - Loki + Alloy integration for DNS query log analytics (syslog/file/API sources, 10 dashboard panels, 3 deployment tiers)
+- `docs/exporter-enhancements-plan.md` - 6 new metric families from existing API
+  data (query types, protocol, top clients/domains/blocked, uptime)
+- `docs/loki-alloy-integration-plan.md` - Loki + Alloy integration for DNS query
+  log analytics (syslog/file/API sources, 10 dashboard panels, 3 deployment
+  tiers)
 - `docs/security-tooling-plan.md` - Security tooling integration (completed)
 
 ## Code Review Findings
 
-Review findings tracked as GitHub issues (#6-#15) and documented in `docs/review/`:
+Review findings tracked as GitHub issues (#6-#15) and documented in
+`docs/review/`:
 
-| Issue | Finding | Severity |
-|-------|---------|----------|
-| #6 | Token in query string (API constraint) | HIGH |
-| #7 | `errors.Is` comparison | HIGH |
-| #8 | goimports wrong prefix | MEDIUM |
-| #9 | Silent SCRAPE_TIMEOUT failure | MEDIUM |
-| #10 | No response body size limit | MEDIUM |
-| #11 | URL string concatenation | MEDIUM |
-| #12 | Hardcoded context.Background() | LOW |
-| #13 | Duplicate blocked metric | LOW |
-| #14 | Test helpers missing *testing.T | LOW |
-| #15 | Missing config/exporter tests | LOW |
+| Issue | Finding                                | Severity |
+| ----- | -------------------------------------- | -------- |
+| #6    | Token in query string (API constraint) | HIGH     |
+| #7    | `errors.Is` comparison                 | HIGH     |
+| #8    | goimports wrong prefix                 | MEDIUM   |
+| #9    | Silent SCRAPE_TIMEOUT failure          | MEDIUM   |
+| #10   | No response body size limit            | MEDIUM   |
+| #11   | URL string concatenation               | MEDIUM   |
+| #12   | Hardcoded context.Background()         | LOW      |
+| #13   | Duplicate blocked metric               | LOW      |
+| #14   | Test helpers missing \*testing.T       | LOW      |
+| #15   | Missing config/exporter tests          | LOW      |
 
 ## GitHub Labels
 
-Labels are managed via `scripts/labels.sh` and `.github/labeler.yml`. Run `scripts/labels.sh` to sync labels to the repo. Use `--dry-run` to preview, `--force` to update existing labels.
+Labels are managed via `scripts/labels.sh` and `.github/labeler.yml`. Run
+`scripts/labels.sh` to sync labels to the repo. Use `--dry-run` to preview,
+`--force` to update existing labels.

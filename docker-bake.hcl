@@ -39,6 +39,14 @@ function "tags" {
 target "_common" {
   dockerfile = "Dockerfile"
   context    = "."
+  // Without this block the Dockerfile's ARGs keep their defaults and the
+  // binary inside the image reports "dev" regardless of what is tagged.
+  // The OCI labels below describe the image; these describe the binary.
+  args = {
+    VERSION = "${VERSION}"
+    COMMIT  = "${COMMIT_SHA}"
+    DATE    = "${BUILD_DATE}"
+  }
   labels = {
     "org.opencontainers.image.source"   = "https://github.com/donaldgifford/technitium_exporter"
     "org.opencontainers.image.revision" = "${COMMIT_SHA}"

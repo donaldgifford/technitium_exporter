@@ -1,6 +1,7 @@
 # Monitoring
 
-Example configurations for monitoring Technitium DNS with Prometheus and Grafana.
+Example configurations for monitoring Technitium DNS with Prometheus and
+Grafana.
 
 ## Prometheus Alerts
 
@@ -29,10 +30,13 @@ rule_files:
 
 `grafana/technitium-dashboard.json` provides:
 
-- **Overview**: Status, total queries, blocked queries, clients, cache entries, zones, blocklist size, block rate
+- **Overview**: Status, total queries, blocked queries, clients, cache entries,
+  zones, blocklist size, block rate
 - **Query Trends**: Query rate and queries by type over time
-- **Response Codes**: Pie chart distribution and time series of response codes (noerror, servfail, nxdomain, refused)
-- **Server Info**: Scrape duration, server version, server domain, zone overrides
+- **Response Codes**: Pie chart distribution and time series of response codes
+  (noerror, servfail, nxdomain, refused)
+- **Server Info**: Scrape duration, server version, server domain, zone
+  overrides
 
 ### Import
 
