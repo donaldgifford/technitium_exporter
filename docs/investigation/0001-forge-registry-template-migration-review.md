@@ -13,6 +13,7 @@ created: 2026-08-02
 **Status:** Concluded **Author:** Donald Gifford **Date:** 2026-08-02
 
 <!--toc:start-->
+
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -52,6 +53,7 @@ created: 2026-08-02
   - [L-10. justfile run recipe: donor-repo doc comment, and missing env](#l-10-justfile-run-recipe-donor-repo-doc-comment-and-missing-env)
   - [L-11. .claude/ is untracked and not ignored](#l-11-claude-is-untracked-and-not-ignored)
   - [L-12. CLAUDE.md is now materially out of date](#l-12-claudemd-is-now-materially-out-of-date)
+  - [L-13. --version writes to stderr, not stdout](#l-13---version-writes-to-stderr-not-stdout)
   - [What is working](#what-is-working)
 - [Make to just migration](#make-to-just-migration)
   - [Missing — must port before deleting Makefile](#missing--must-port-before-deleting-makefile)
@@ -533,6 +535,28 @@ Go 1.25.7 (actual 1.26.5); every command documented as `make ...`; a "test.yml"
 workflow that this branch deletes; `golang/govulncheck-action@v1` (actual:
 `donaldgifford/govulncheck-action@v1`); `trivy-action@0.33.1` (actual
 `v0.36.0`). Needs a pass once the just migration settles.
+
+### L-13. `--version` writes to stderr, not stdout
+
+Found while implementing Phase 2. `technitium_exporter --version` emits nothing
+on stdout:
+
+```text
+$ ./build/bin/technitium_exporter --version 2>/dev/null
+(empty)
+$ ./build/bin/technitium_exporter --version 2>&1 >/dev/null
+v0.3.0-9-g2a89950-dirty (commit: 2a89950, built: ...)
+```
+
+This is kingpin's default behaviour for `app.Version()`, not a bug in this
+repo's code, but it is surprising: `--version` is requested output, not a
+diagnostic, and most tooling expects it on stdout. Anything doing
+`technitium_exporter --version | grep ...` silently gets nothing — which is
+exactly what happened to `just build`'s verification echo before it was given a
+`2>&1`.
+
+Not fixed: changing it means touching `cmd/`, which IMPL-0001 puts out of scope.
+Worth a follow-up issue if the exporter is ever scripted against.
 
 ### What is working
 

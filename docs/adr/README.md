@@ -27,8 +27,10 @@ docz create adr "Your ADR Title"
 - **Superseded by ADR-XXXX**: Replaced by another ADR
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
+
 ## All ADRs
 
-| ID | Title | Status | Date | Author | Link |
-|----|-------|--------|------|--------|------|
+| ID  | Title | Status | Date | Author | Link |
+| --- | ----- | ------ | ---- | ------ | ---- |
+
 <!-- END DOCZ AUTO-GENERATED -->

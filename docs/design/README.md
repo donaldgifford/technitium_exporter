@@ -28,8 +28,10 @@ docz create design "Your Design Title"
 - **Abandoned**: Design was not pursued
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
+
 ## All Design
 
-| ID | Title | Status | Date | Author | Link |
-|----|-------|--------|------|--------|------|
+| ID  | Title | Status | Date | Author | Link |
+| --- | ----- | ------ | ---- | ------ | ---- |
+
 <!-- END DOCZ AUTO-GENERATED -->

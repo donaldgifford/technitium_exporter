@@ -13,6 +13,7 @@ created: 2026-08-02
 **Status:** Draft **Author:** Donald Gifford **Date:** 2026-08-02
 
 <!--toc:start-->
+
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -196,7 +197,7 @@ correctly and is not changed.
   version, commit, and date — not `dev (commit: none, built: unknown)`. **Met**
   — now reports `v0.3.0-9-g2a89950-dirty (commit: 2a89950, built: ...)`. Note
   kingpin writes `--version` to **stderr**, not stdout, so the recipe's
-  verification echo needs `2>&1`; see H-12 in INV-0001
+  verification echo needs `2>&1`; see L-13 in INV-0001
 - `docker buildx bake dev --print` shows an `args` key on the target
 - The version string contains no `{VERSION}` fragment and no bare PID
 
