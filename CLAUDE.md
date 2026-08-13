@@ -215,17 +215,27 @@ Configuration in `.chglog.yml`, data in `changelog.yml`.
 
 ## CI/CD
 
-GitHub Actions workflows in `.github/workflows/`:
+Eleven GitHub Actions workflows in `.github/workflows/`. The main ones:
 
-- **test.yml**: Lint, test, build, package-lint (lintian), and security scan
-  jobs
-- **release.yml**: Release automation with goreleaser (includes SBOM generation
+- **ci.yml**: `labeler`, `lint`, `test-go`, `security`, and `build` jobs. The
+  `lint` job runs `just lint` under mise, so CI and local runs use the same tool
+  versions from `mise.toml`. The `build` job runs one
+  `goreleaser release --snapshot` and both lintian and the SBOM scan consume its
+  `dist/` — it was previously two jobs each doing that build.
+- **release.yml**: release automation with goreleaser (includes SBOM generation
   via syft)
+- **changelog.yml** / **changelog-regen.yml**: drift check on PRs, and
+  regeneration on `main`
+- **security.yml**, **codeql.yml**, **trufflehog.yml**, **license-check.yml**:
+  scheduled and per-PR scanning
 
-The `package-lint` job builds deb packages and runs lintian to verify Debian
-policy compliance.
+Every workflow has a `concurrency` group. Workflows that write outside the PR —
+`release.yml`, `ghcr.yml`, `changelog-regen.yml` — use
+`cancel-in-progress: false`, since cancelling a partial release, image push, or
+push to `main` is worse than letting a redundant run finish.
 
-To run lintian locally (macOS via Docker):
+The `build` job runs lintian against the deb package to verify Debian policy
+compliance. To run lintian locally (macOS via Docker):
 
 ```bash
 goreleaser release --snapshot --clean --skip=publish,sign

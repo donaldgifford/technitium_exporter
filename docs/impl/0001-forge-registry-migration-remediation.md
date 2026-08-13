@@ -418,40 +418,82 @@ on fork PRs.
 
 #### Tasks
 
-- [ ] M-4 — install golangci-lint via `mise-action` in CI and drop the
+- [x] M-4 — install golangci-lint via `mise-action` in CI and drop the
       `version:` input from `golangci-lint-action` (OQ-5a), making `mise.toml`
       the single source of truth. CI pins `v2.11.4` today, `mise.toml` pins
-      `2.12.2`
-- [ ] M-6 — give `ci.yml`'s `build` job `fetch-depth: 0` (goreleaser needs tags;
+      `2.12.2`. **Implemented differently**: `golangci-lint-action` installs its
+      own binary regardless of what is already on `PATH`, so mise-action plus
+      that action would not have made `mise.toml` authoritative. Replaced the
+      action with `mise-action` + `run: just lint`
+- [x] M-6 — give `ci.yml`'s `build` job `fetch-depth: 0` (goreleaser needs tags;
       `package-lint` already has it), and align the two jobs on one
-      `goreleaser-action` major (currently `v6` and `v7.1.0`)
-- [ ] M-6 — deduplicate the two full `goreleaser release --snapshot` runs across
-      `build` and `package-lint`
-- [ ] M-7 — fix the `labeler` job: the step is named "Checkout code" but is
+      `goreleaser-action` major (currently `v6` and `v7.1.0`). Also aligned
+      `release.yml` from the floating `@v7` onto the same `@v7.1.0`, so the
+      snapshot CI validates with is built by the same goreleaser that cuts the
+      real release
+- [x] M-6 — deduplicate the two full `goreleaser release --snapshot` runs across
+      `build` and `package-lint` — merged into one `build` job; lintian and the
+      SBOM scan now consume the same `dist/`
+- [x] M-7 — fix the `labeler` job: the step is named "Checkout code" but is
       `actions/labeler@v6`, and `pull_request` yields a read-only token on fork
-      PRs, so it will fail on external contributions
-- [ ] M-8 — make `security.yml` consistent with `ci.yml`'s security job on
-      whether `donaldgifford/govulncheck-action` needs a preceding checkout
-- [ ] M-9 — add `concurrency` groups to all workflows; use
+      PRs, so it will fail on external contributions. Renamed the step and
+      guarded the job on the head repo being this repo. Chose skip-on-fork over
+      `pull_request_target`, which would run with a writable token against an
+      untrusted head ref — too much risk for cosmetic labels
+- [x] M-8 — make `security.yml` consistent with `ci.yml`'s security job on
+      whether `donaldgifford/govulncheck-action` needs a preceding checkout.
+      Resolved by reading the action: it is a composite whose first step is its
+      own `actions/checkout` (input `repo-checkout`, default true), and it runs
+      `actions/setup-go` itself. So `security.yml` was already correct and
+      `ci.yml` had a redundant checkout + setup-go. `ci.yml` keeps its checkout
+      (trivy needs the tree) but now passes `repo-checkout: false`; the
+      redundant `setup-go` is gone. Both files document the asymmetry
+- [x] M-9 — add `concurrency` groups to all workflows; use
       `cancel-in-progress: false` for `changelog-regen.yml`, which pushes to
-      `main` and can race with itself
-- [ ] M-10 — replace `license-check.yml`'s
+      `main` and can race with itself. Applied to 10 workflows (trufflehog
+      already had one); `release.yml` and `ghcr.yml` also got
+      `cancel-in-progress: false` on the same reasoning — cancelling a partial
+      release or a partial manifest-list push is worse than a redundant run
+- [x] M-10 — replace `license-check.yml`'s
       `go install github.com/google/go-licenses@latest` with the `mise.toml` pin
-      via `mise-action`
-- [ ] M-3 — remove `.github/` from `.yamllint.yml`'s ignore list (OQ-6a) and fix
+      via `mise-action`. Switched the steps to `just license-check` /
+      `just license-report` too, so the licence allow-list is defined once in
+      the justfile instead of being spelled out again inline
+- [x] M-3 — remove `.github/` from `.yamllint.yml`'s ignore list (OQ-6a) and fix
       whatever surfaces across the 11 workflow files; also drop the dead
-      `.charts/` and `config/testdata/section_key_dup.bad.yml` entries
-- [ ] M-5 — keep both chglog and git-cliff (OQ-7a) and make the split explicit:
+      `.charts/` and `config/testdata/section_key_dup.bad.yml` entries. Four
+      errors surfaced, all `empty-values` on bare Actions triggers
+      (`pull_request:`, `workflow_dispatch:`). Turned off
+      `empty-values.forbid-in-block-mappings` rather than adding a
+      `# yamllint disable-line` to every trigger in every workflow forever;
+      yamllint has no per-path rule overrides. Added `build/` and `dist/` to the
+      ignore list, which were being linted as if they were source
+- [x] M-5 — keep both chglog and git-cliff (OQ-7a) and make the split explicit:
       add `just` recipes for the chglog side (deb package changelog) alongside
       the existing git-cliff ones (repo `CHANGELOG.md`), and document which
-      artifact each one feeds
+      artifact each one feeds — added `changelog-deb` and `changelog-deb-add`
+      under a header comment stating the split
+- [x] **(unplanned)** Make CI actually run the non-Go linters. No workflow ran
+      yamllint, markdownlint, prettier, or actionlint — `just lint` covered them
+      locally but CI only ever ran golangci-lint. That gap is precisely how H-8
+      survived: a markdownlint config named `.markdowncilint.yml`, a name the
+      tool never looks for, sat unread with nothing to catch it. Folded into the
+      M-4 change, since the `lint` job now runs `just lint` wholesale
 
 #### Success Criteria
 
-- CI wall-clock drops measurably (one goreleaser snapshot run, not two)
-- A PR from a fork does not fail the labeler job
-- Local and CI golangci-lint report identical results on the same commit
-- No workflow references a tool version that disagrees with `mise.toml`
+- CI wall-clock drops measurably (one goreleaser snapshot run, not two) — **met
+  by construction**; `build` and `package-lint` are one job. Not yet measured
+  against a real run
+- A PR from a fork does not fail the labeler job — **met**, the job is skipped
+  when `head.repo.full_name` differs from the repo
+- Local and CI golangci-lint report identical results on the same commit —
+  **met**, both now resolve the binary from `mise.toml` and run `just lint-go`
+- No workflow references a tool version that disagrees with `mise.toml` —
+  **met**
+- `just lint` passes with `.github/` no longer excluded from yamllint — **met**,
+  0 errors; the 7 remaining `line-length` findings are warnings by config and
+  all pre-date this phase
 
 ---
 

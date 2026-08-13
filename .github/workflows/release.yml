@@ -18,6 +18,12 @@ env:
   REGISTRY: ghcr.io
   IMAGE_REPO: donaldgifford/technitium_exporter
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # No cancellation: this workflow publishes a GitHub release and signed
+  # artifacts; cancelling mid-run leaves a partial release.
+  cancel-in-progress: false
+
 jobs:
   bump-version:
     name: Bump Version
@@ -73,7 +79,7 @@ jobs:
         uses: anchore/sbom-action/download-syft@v0
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@v7.1.0
         with:
           version: "~> v2"
           args: release --clean

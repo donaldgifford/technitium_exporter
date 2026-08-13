@@ -40,6 +40,12 @@ env:
   REGISTRY: ghcr.io
   IMAGE_REPO: donaldgifford/technitium_exporter
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # No cancellation: this workflow pushes container images to the registry;
+  # cancelling mid-run leaves a partial manifest list.
+  cancel-in-progress: false
+
 jobs:
   image:
     name: Publish image

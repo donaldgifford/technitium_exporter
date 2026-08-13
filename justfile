@@ -290,12 +290,40 @@ license-report:
     @go-licenses report ./... --template=.github/licenses-csv.tpl
 
 # ─── Changelog ──────────────────────────────────────────────────────
+#
+# Two changelog tools, deliberately. They produce different artifacts for
+# different audiences and neither can do the other's job:
+#
+#   git-cliff  -> CHANGELOG.md      the repo's human-facing changelog, built
+#                                   from conventional commits, config in
+#                                   cliff.toml. Verified in CI by the drift
+#                                   check, so it must never be hand-edited.
+#
+#   chglog     -> changelog.yml     the Debian package changelog, consumed by
+#                                   goreleaser's nfpms section
+#                                   (.goreleaser.yml `changelog: changelog.yml`)
+#                                   and shipped inside the .deb. Config in
+#                                   .chglog.yml. Entries are per-release and
+#                                   added by hand after tagging.
+#
+# Rule of thumb: `changelog*` recipes are git-cliff, `changelog-deb*` are chglog.
 
 # Regenerate CHANGELOG.md from conventional commits (never hand-edit it)
 [group('changelog')]
 changelog:
     @git-cliff -o CHANGELOG.md
     @echo "✓ CHANGELOG.md regenerated"
+
+# Render the Debian package changelog from changelog.yml (what ships in the .deb)
+[group('changelog')]
+changelog-deb:
+    @chglog format --template deb
+
+# Add a changelog.yml entry for the current tag — run after tagging a release
+[group('changelog')]
+changelog-deb-add:
+    @chglog add
+    @echo "✓ changelog.yml updated — commit it before releasing"
 
 # Mirror of CI's drift check: fail if CHANGELOG.md is stale
 [group('changelog')]
