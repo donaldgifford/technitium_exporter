@@ -13,7 +13,6 @@ created: 2026-08-02
 **Status:** Draft **Author:** Donald Gifford **Date:** 2026-08-02
 
 <!--toc:start-->
-
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -210,17 +209,26 @@ injects; this phase makes the recipes reachable and the bake invocation valid.
 
 #### Tasks
 
-- [ ] Add `import 'docker.just'` to `justfile` (H-5) — `docker.just` documents
+- [x] Add `import 'docker.just'` to `justfile` (H-5) — `docker.just` documents
       this requirement in its own header but nothing does it
-- [ ] Add `group "default" { targets = ["dev"] }` to `docker-bake.hcl` (H-6) —
+- [x] Add `group "default" { targets = ["dev"] }` to `docker-bake.hcl` (H-6) —
       bare `docker buildx bake` currently exits with
       `ERROR: failed to find target default`
-- [ ] Delete the `docker-push` recipe from `docker.just` (OQ-2a) — it runs
+- [x] Delete the `docker-push` recipe from `docker.just` (OQ-2a) — it runs
       `bake --push` against a `dev` target whose `output` is `type=docker`,
       which contradicts itself, and duplicates `docker-buildx`. Releases push
       from `ghcr.yml` on a tag, not from a laptop
-- [ ] Update `docker-bake.hcl:68`'s stale `make docker-push` comment reference
-- [ ] Confirm `just --list` shows all four docker recipes
+- [x] Update `docker-bake.hcl:68`'s stale `make docker-push` comment reference
+- [x] Confirm `just --list` shows the docker recipes — three, not four;
+      `docker-push` was deleted per OQ-2a
+- [x] **(unplanned)** Remove `set shell` from `docker.just`. `just` permits a
+      setting to be defined only once across a justfile and its imports, so
+      adding the import alone made `just` refuse to parse _anything_:
+      `error: setting 'shell' first set on line 5 is redefined on line 7`
+- [x] **(unplanned)** Export `VERSION` / `COMMIT_SHA` / `BUILD_DATE` from
+      `docker.just`. Phase 2 taught `docker-bake.hcl` to forward build args, but
+      nothing was setting the bake variables, so a local `just docker-build`
+      still produced an image reporting `dev`
 
 #### Success Criteria
 
@@ -229,7 +237,9 @@ injects; this phase makes the recipes reachable and the bake invocation valid.
 - `just docker-build` completes and loads an image into the local daemon
 - `docker run --rm ghcr.io/donaldgifford/technitium_exporter:dev --version`
   reports the correct version — this is the end-to-end proof for Phases 2 and 3
-  together
+  together. **Met**: reports
+  `v0.3.0-11-g6b187af-dirty (commit: 6b187af, built: 2026-08-13T03:16:19Z)`,
+  with OCI labels populated to match and the image running as `nonroot`
 - `docker buildx bake ci --print` still resolves both platforms
 
 ---

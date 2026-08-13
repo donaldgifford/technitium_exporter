@@ -55,6 +55,13 @@ target "_common" {
   }
 }
 
+// A bare `docker buildx bake` resolves the group named "default". Without
+// this it exits with "failed to find target default" rather than doing
+// anything sensible.
+group "default" {
+  targets = ["dev"]
+}
+
 // Local development build — single-arch, loads into Docker daemon.
 target "dev" {
   inherits = ["_common"]
@@ -73,7 +80,8 @@ target "ci" {
 }
 
 // Populated by docker/metadata-action in CI with computed tags and labels.
-// Default tags are used for local `make docker-push`; CI overrides via bake file merge.
+// The defaults here only apply to a local `just docker-buildx`; in CI the
+// metadata-action's generated bake file merges over them.
 target "docker-metadata-action" {
   tags = tags(VERSION)
 }

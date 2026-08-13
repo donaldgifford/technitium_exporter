@@ -9,13 +9,11 @@ Design docs, plans, and implementation docs can reference investigations by ID
 (e.g. `INV-0001`) to document how open questions were resolved.
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
-
 ## All Investigations
 
-| ID       | Title                                    | Status    | Date       | Author         | Link                                                                                                 |
-| -------- | ---------------------------------------- | --------- | ---------- | -------------- | ---------------------------------------------------------------------------------------------------- |
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
 | INV-0001 | Forge-registry template migration review | Concluded | 2026-08-02 | Donald Gifford | [0001-forge-registry-template-migration-review.md](0001-forge-registry-template-migration-review.md) |
-
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

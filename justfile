@@ -4,6 +4,10 @@
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
+# Docker recipes live in their own file; without this import none of the
+# docker-* recipes exist at all.
+import 'docker.just'
+
 project_name      := "technitium_exporter"
 project_owner     := "donaldgifford"
 go_package        := "github.com/" + project_owner + "/" + project_name
