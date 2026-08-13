@@ -5,6 +5,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(just)* Port the last Makefile targets and delete the Makefile
+
 ### Bug Fixes
 
 - *(makefile)* Remove hardcoded Technitium credentials
@@ -14,6 +18,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(docker)* Wire up the image pipeline end to end
 - *(lint)* Make markdownlint config discoverable and the tree clean
 - *(test)* Make the coverage gate gate something
+- *(just)* Stop echoing recipe comments into build logs
 
 ### Documentation
 
