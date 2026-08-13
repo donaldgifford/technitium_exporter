@@ -303,17 +303,23 @@ violations that the missing config had been hiding; `--fix` clears 27, leaving
 
 ##### Coverage gate (M-1)
 
-- [ ] Re-point `justfile:84`'s `internal/` prefix at `collector/` and
+- [x] Re-point `justfile:84`'s `internal/` prefix at `collector/` and
       `pkg/technitium/` only (OQ-4a). Current per-package coverage: `collector`
       96.9%, `pkg/technitium` 91.5%, `config` 0%, `exporter` 0%, `cmd` 0% — both
-      gated packages clear the 60% floor comfortably today
-- [ ] Leave a comment in the recipe naming `config/` and `exporter/` as
+      gated packages clear the 60% floor comfortably today. Implemented as an
+      explicit `gated_packages` list rather than a second path prefix, so adding
+      a package is a one-word edit and the set is auditable at a glance
+- [x] Leave a comment in the recipe naming `config/` and `exporter/` as
       deliberately ungated pending issue #15, so the omission reads as a
       decision rather than an oversight
-- [ ] Fix the recipe's inline comment, which claims `.codecov.yml` ignores
+- [x] Fix the recipe's inline comment, which claims `.codecov.yml` ignores
       `cmd/`; it actually ignores `main.go`, `docs`, `scripts`
-- [ ] Ensure the gate can actually fail — verify by temporarily lowering the
+- [x] Ensure the gate can actually fail — verify by temporarily lowering the
       floor above a real package's coverage
+- [x] **(unplanned)** Treat a gated package with no rows in `coverage.out` as a
+      failure rather than a silent skip. This is the same fail-open bug the
+      `internal/` prefix had, one rename away from returning: without it, a typo
+      in `gated_packages` retires the gate and still exits 0
 
 #### Success Criteria
 
