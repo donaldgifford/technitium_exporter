@@ -707,13 +707,16 @@ than by new Go tests. The Go source is untouched.
       GCs the unreachable objects. Note `--all` is what makes this visible: a
       plain `git log -S` on the branches returns empty and would have been
       falsely reassuring
-- [ ] Open a throwaway PR to confirm `changelog.yml`, the labeler, and the
+- [x] Open a throwaway PR to confirm `changelog.yml`, the labeler, and the
       required-labels check all behave — several findings only manifest in a
-      real PR context. **Not done**: the branch has not been pushed, so no CI
-      run has exercised the rewritten `ci.yml`. Everything it runs has been
-      verified locally via `just ci`, but the fork-PR labeler guard, the
-      concurrency groups, and the merged `build` job's SBOM glob are only
-      observable on GitHub
+      real PR context. Done as PR #30 rather than a throwaway, since this branch
+      is the change. All 12 checks pass. The three that could not be verified
+      locally: `Label PR` passes under the new fork guard (same-repo PR takes
+      the allowed branch); `Check Required Labels` passes; and in the merged
+      `Build & Package` job, `Locate archive SBOM` succeeds — it `exit 1`s when
+      the glob matches nothing — with `Upload SBOM scan SARIF` reporting
+      `success` rather than `skipped`, which is what distinguishes a real SARIF
+      upload from the guard swallowing an empty one (H-10)
 - [x] Confirm the coverage gate fails when the floor is raised above a real
       package's coverage — fails at floor 95 (one package), at 99 (both), on a
       stale package name, and when `coverage.out` is absent
