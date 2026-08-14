@@ -33,6 +33,6 @@ docz create impl "Your Implementation Title"
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
-| IMPL-0001 | Forge-registry migration remediation | Draft | 2026-08-02 | Donald Gifford | [0001-forge-registry-migration-remediation.md](0001-forge-registry-migration-remediation.md) |
+| IMPL-0001 | Forge-registry migration remediation | In Progress | 2026-08-02 | Donald Gifford | [0001-forge-registry-migration-remediation.md](0001-forge-registry-migration-remediation.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- prettier-ignore-end -->

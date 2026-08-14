@@ -12,8 +12,13 @@ created: 2026-08-02
 
 **Status:** Concluded **Author:** Donald Gifford **Date:** 2026-08-02
 
-<!--toc:start-->
+> **Remediation landed.** All 33 findings below are addressed by
+> [IMPL-0001](../impl/0001-forge-registry-migration-remediation.md), except the
+> four Phase 1 owner-actions tracked there (token rotation, the GitHub Support
+> request, and re-enabling the `main` ruleset). This document is kept as the
+> record of what was found and how it was verified.
 
+<!--toc:start-->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)

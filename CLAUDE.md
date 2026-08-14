@@ -10,7 +10,7 @@ Prometheus format.
 
 ## Build Commands
 
-Requires Go 1.26.5+ and `just` (both managed via mise). The `Makefile` was
+Requires Go 1.26.6+ and `just` (both managed via mise). The `Makefile` was
 removed in favour of `justfile`; `just --list` is the menu.
 
 ```bash
@@ -52,6 +52,90 @@ Credentials for `just run-local` and `just test-api` come from a gitignored
 `.env` at the repo root (loaded automatically via `set dotenv-load`), or from
 exported shell variables. Never commit them.
 
+## Task Runner
+
+`just` is the only task runner; there is no `Makefile`. Run `just` with no
+arguments (or `just --list`) for the menu. Recipes are tagged into groups:
+
+| Group       | Covers                                                                                  |
+| ----------- | --------------------------------------------------------------------------------------- |
+| `build`     | `build`, `clean`                                                                        |
+| `run`       | `run`, `run-local`, `test-api`                                                          |
+| `test`      | `test`, `test-pkg`, `test-integration`, `test-coverage`, `coverage-gate`, `test-report` |
+| `lint`      | `lint` + per-tool `lint-*`, and `fmt` + per-tool `fmt-*`                                |
+| `security`  | `govulncheck`, `trivy`, `security`, `syft`, `license-*`                                 |
+| `changelog` | `changelog`, `changelog-check`, `changelog-deb*`                                        |
+| `docs`      | `docs-index`, `docs-wiki`                                                               |
+| `docker`    | `docker-build`, `docker-buildx`, `docker-ci`                                            |
+| `release`   | `release-check`, `release-local`, `release`                                             |
+| `repo`      | `labels`                                                                                |
+| `gate`      | `check` (lint + test), `ci` (everything CI runs)                                        |
+
+Two things about the file itself that are easy to trip over:
+
+- Docker recipes live in `docker.just`, pulled in by `import 'docker.just'`. A
+  `just` setting (`set shell`, `set dotenv-load`) may be declared only once
+  across a justfile and its imports — declaring `set shell` in both makes `just`
+  refuse to parse anything at all.
+- `just` echoes every recipe line before running it, including comments. Prefix
+  in-recipe comments with `@` to keep them out of build logs.
+
+## Docker
+
+Images are built with `docker buildx bake`; `docker-bake.hcl` is the single
+source of truth for all three targets:
+
+| Target    | Platforms     | Output             | Used by             |
+| --------- | ------------- | ------------------ | ------------------- |
+| `dev`     | host arch     | loads into daemon  | `just docker-build` |
+| `ci`      | amd64 + arm64 | `cacheonly`        | `just docker-ci`    |
+| `release` | amd64 + arm64 | pushes to registry | `ghcr.yml` on a tag |
+
+```bash
+just docker-build     # local image, tagged :dev
+just docker-ci        # multi-arch validation, no push
+docker run --rm ghcr.io/donaldgifford/technitium_exporter:dev --version
+```
+
+There is deliberately no `docker-push` recipe: the `release` target already
+pushes, and pushes should come from `ghcr.yml` on a tag, where the image is also
+cosign-signed — not from a laptop.
+
+Version metadata has to be threaded through three layers, and a break in any one
+of them silently yields a binary reporting `dev`:
+
+1. `docker.just` exports `VERSION` / `COMMIT_SHA` / `BUILD_DATE` from the `just`
+   variables.
+2. `docker-bake.hcl`'s `_common` target reads those into the `args` block (and
+   into the OCI labels, which describe the image rather than the binary).
+3. `Dockerfile` receives them as `ARG`s and passes them to `-ldflags -X`.
+
+The `Dockerfile` uses a single `$` in that `RUN` — `RUN` is not on Dockerfile's
+variable-substitution list, so the string reaches `/bin/sh` intact and the shell
+expands the ARGs. Writing `$$` makes the shell read it as its own PID.
+
+The base image is `gcr.io/distroless/static-debian12:nonroot`, and the container
+runs as `nonroot`.
+
+## Changelog
+
+Two changelog tools, deliberately, producing different artifacts:
+
+| Tool        | Artifact                                    | Config        | Recipes                              |
+| ----------- | ------------------------------------------- | ------------- | ------------------------------------ |
+| `git-cliff` | `CHANGELOG.md`                              | `cliff.toml`  | `changelog`, `changelog-check`       |
+| `chglog`    | the `.deb`'s changelog, via `changelog.yml` | `.chglog.yml` | `changelog-deb`, `changelog-deb-add` |
+
+`CHANGELOG.md` is generated and must never be hand-edited — `changelog.yml` (the
+workflow) verifies it byte-for-byte on every PR, so a manual edit or a
+`prettier` reflow fails CI. It is excluded from prettier and markdownlint for
+that reason. Regenerate with `just changelog`.
+
+Because regenerating adds an entry for every new commit, a PR that adds commits
+needs a trailing `chore(changelog): sync` commit. That message is matched by
+`cliff.toml`'s `^chore.*[Cc]hangelog` skip parser, so it does not itself create
+new drift.
+
 ## Running the Exporter
 
 ```bash
@@ -80,8 +164,18 @@ deploy/
 contrib/
 ├── grafana/                # Grafana dashboard JSONs (light + dark)
 └── prometheus/             # Prometheus alert rules
-docs/                       # Planning docs, review findings
+docs/                       # docz docs (rfc/adr/design/impl/plan/investigation)
 scripts/                    # Utility scripts (labels.sh)
+
+justfile                    # Task runner — `just --list` for the menu
+docker.just                 # Docker recipes, imported by justfile
+Dockerfile                  # Multi-stage build onto distroless/nonroot
+docker-bake.hcl             # buildx bake targets: dev, ci, release
+.goreleaser.yml             # Release archives, deb packaging, SBOMs
+cliff.toml                  # git-cliff config -> CHANGELOG.md
+.chglog.yml + changelog.yml # chglog config + data -> the .deb's changelog
+mkdocs.yml                  # Generated by `just docs-wiki` for Backstage
+catalog-info.yaml           # Backstage component descriptor
 ```
 
 **Key patterns:**
@@ -199,19 +293,11 @@ Package files in `deploy/deb/`:
 - `copyright` - Debian copyright file
 - `lintian-overrides` - Suppress expected warnings
 
-### Changelog
-
-Uses [chglog](https://github.com/goreleaser/chglog) for changelog generation:
-
-```bash
-# Format changelog for deb
-chglog format --template deb
-
-# Add new entry (after tagging)
-chglog add
-```
-
-Configuration in `.chglog.yml`, data in `changelog.yml`.
+The changelog shipped inside the `.deb` comes from
+[chglog](https://github.com/goreleaser/chglog), not from `CHANGELOG.md` — see
+[Changelog](#changelog) above for how the two tools divide up. Run
+`just changelog-deb-add` after tagging to add the release's entry, and commit
+the updated `changelog.yml` before releasing.
 
 ## CI/CD
 
@@ -256,8 +342,11 @@ Four-tool security stack managed via mise:
 
 - `just security` runs govulncheck + trivy (not syft -- SBOM is artifact
   generation, not a check)
-- CI runs govulncheck (`golang/govulncheck-action@v1`) and trivy
-  (`aquasecurity/trivy-action@0.33.1`) on every PR
+- CI runs govulncheck (`donaldgifford/govulncheck-action@v1`) and trivy
+  (`aquasecurity/trivy-action@v0.36.0`) on every PR. The govulncheck action is a
+  composite that runs its own checkout and `setup-go`, so it needs neither
+  before it — `ci.yml` passes `repo-checkout: false` only because that job
+  checks out separately for trivy.
 - Release pipeline generates SPDX SBOMs via goreleaser's `sboms` section
   (requires syft installed via `anchore/sbom-action/download-syft@v0`)
 

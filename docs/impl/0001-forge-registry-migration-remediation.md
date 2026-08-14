@@ -1,7 +1,7 @@
 ---
 id: IMPL-0001
 title: "Forge-registry migration remediation"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-08-02
 ---
@@ -10,10 +10,9 @@ created: 2026-08-02
 
 # IMPL 0001: Forge-registry migration remediation
 
-**Status:** Draft **Author:** Donald Gifford **Date:** 2026-08-02
+**Status:** In Progress **Author:** Donald Gifford **Date:** 2026-08-02
 
 <!--toc:start-->
-
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -68,7 +67,14 @@ just ci && just docker-build && \
   docker run --rm ghcr.io/donaldgifford/technitium_exporter:dev --version
 ```
 
-Today it fails at `just lint-md`, the first step of `just ci`.
+That sequence is now green. All eight phases' repo-side tasks have landed.
+
+The doc is **In Progress** rather than Completed because four Phase 1
+owner-actions remain open, and they are the consequential ones: the leaked
+Technitium API token has not been rotated, the GitHub Support request to evict
+it from the `refs/pull/*` objects has not been submitted, and the `main`
+repository ruleset is still disabled from the force-push. None of those can be
+done from inside the repo. See Phase 1.
 
 ## Scope
 
@@ -585,28 +591,47 @@ target.
 
 #### Tasks
 
-- [ ] L-12 — update CLAUDE.md's build-commands section: every `make X` becomes
-      `just X`
-- [ ] L-12 — correct the Go version (documented 1.25.7, actual 1.26.5 per
-      `go.mod`)
-- [ ] L-12 — replace the `test.yml` workflow reference; this branch deletes it
-      in favour of `ci.yml`
-- [ ] L-12 — correct `golang/govulncheck-action@v1` to
+- [x] L-12 — update CLAUDE.md's build-commands section: every `make X` becomes
+      `just X` (done in Phase 5, where the recipes were ported)
+- [x] L-12 — correct the Go version (documented 1.25.7, actual 1.26.5 per
+      `go.mod`) — now 1.26.6, see the security bump below
+- [x] L-12 — replace the `test.yml` workflow reference; this branch deletes it
+      in favour of `ci.yml` (done in Phase 6, alongside the job merge)
+- [x] L-12 — correct `golang/govulncheck-action@v1` to
       `donaldgifford/govulncheck-action@v1` and `trivy-action@0.33.1` to
       `v0.36.0`
-- [ ] Document the Docker workflow in CLAUDE.md — `Dockerfile`,
+- [x] Document the Docker workflow in CLAUDE.md — `Dockerfile`,
       `docker-bake.hcl`, `docker.just`, and the GHCR publish path are entirely
-      undocumented
-- [ ] Document the changelog workflow and whichever tool survives OQ-7
-- [ ] Add a "Task Runner" section explaining `just --list` and the recipe groups
-- [ ] Update INV-0001's status to reflect that remediation has landed
-- [ ] Run `docz update` to refresh the index tables
+      undocumented. Added a Docker section covering the three bake targets, the
+      three-layer version-metadata path, and the `$` vs `$$` trap
+- [x] Document the changelog workflow and whichever tool survives OQ-7 — both
+      survive; the new Changelog section tables which artifact each feeds and
+      records the standing `chore(changelog): sync` requirement
+- [x] Add a "Task Runner" section explaining `just --list` and the recipe groups
+- [x] Update INV-0001's status to reflect that remediation has landed — stays
+      `Concluded` (correct for an investigation) with a note pointing at this
+      doc and naming the four still-open owner-actions
+- [x] Run `docz update` to refresh the index tables
+- [x] **(unplanned)** Bump Go 1.26.5 → 1.26.6 across `mise.toml`, `go.mod`,
+      `Dockerfile`, and CLAUDE.md. `just govulncheck` began failing with exit 3
+      on five stdlib advisories — GO-2026-6218 (`net/url`), GO-2026-6090
+      (`crypto/tls`), GO-2026-6089 and GO-2026-5026 (`net/http`), GO-2026-5972
+      (`encoding/asn1`) — all fixed in 1.26.6, and one with a live call path
+      through `technitium.Client.doRequest`. Not a consequence of this plan; the
+      advisories simply landed mid-flight. Left in rather than deferred because
+      it fails `just ci`
+- [x] **(unplanned)** Fold the `Packaging > Changelog` subsection into the new
+      top-level Changelog section — two headings with the same text, which MD024
+      correctly rejected
 
 #### Success Criteria
 
-- Every command in CLAUDE.md executes successfully as written
-- No reference to `make`, `test.yml`, or Go 1.25.7 survives
-- `docz update --dry-run` reports no drift
+- Every command in CLAUDE.md executes successfully as written — **met**, all 17
+  distinct `just` invocations verified to resolve via `just --show`
+- No reference to `make`, `test.yml`, or Go 1.25.7 survives — **met**
+- `docz update --dry-run` reports no drift — **met**
+- `just ci` green after the Go bump, with `just govulncheck` reporting no
+  vulnerabilities — **met**
 
 ---
 
