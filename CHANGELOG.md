@@ -29,6 +29,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Record testing-plan results in IMPL-0001
 - Record testing-plan results in IMPL-0001
 - *(inv)* Record M-11 and L-14, found auditing the Phase 6 CI changes
+- Record PR #30 CI results in IMPL-0001's testing plan
 
 ### Miscellaneous Tasks
 
