@@ -26,6 +26,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Correct OQ-1 claim, add GitHub Support request
 - *(inv)* Record L-13, kingpin --version writes to stderr
 - Refresh CLAUDE.md for the post-migration repo
+- Record testing-plan results in IMPL-0001
 
 ### Miscellaneous Tasks
 
