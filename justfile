@@ -339,6 +339,21 @@ changelog-check:
     fi
     echo "✓ CHANGELOG.md is up to date"
 
+# ─── Docs ───────────────────────────────────────────────────────────
+
+# Regenerate the docz README index tables
+[group('docs')]
+docs-index:
+    @docz update
+
+# Rebuild mkdocs.yml's nav from docs/ — run after adding or renaming a doc
+[group('docs')]
+docs-wiki:
+    @# catalog-info.yaml declares `techdocs-ref: "dir:."`, which means Backstage
+    @# looks for mkdocs.yml at the repo root. It is generated, not hand-written:
+    @# see the exclusions in .yamllint.yml and .yamlfmt.yml.
+    @docz wiki update
+
 # ─── Repo admin ─────────────────────────────────────────────────────
 
 # Sync GitHub labels from labeler.yml + pr-labels.yml: just labels --dry-run

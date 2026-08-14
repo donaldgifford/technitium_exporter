@@ -4,7 +4,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: technitium_exporter
-  title: technitium_expoerter
+  title: technitium_exporter
   description: Prometheus exporter for Technitium DNS Server
   annotations:
     backstage.io/source-location: url:https://github.com/donaldgifford/technitium_exporter

@@ -4,11 +4,11 @@
 # Quotation marks are required for the leading asterisk
 go:
   - changed-files:
-      - any-glob-to-any-file: "cmd/**.go"
-      - any-glob-to-any-file: "pkg/**.go"
-      - any-glob-to-any-file: "collector/**.go"
-      - any-glob-to-any-file: "config/**.go"
-      - any-glob-to-any-file: "exporter/**.go"
+      - any-glob-to-any-file: "cmd/**/*.go"
+      - any-glob-to-any-file: "pkg/**/*.go"
+      - any-glob-to-any-file: "collector/**/*.go"
+      - any-glob-to-any-file: "config/**/*.go"
+      - any-glob-to-any-file: "exporter/**/*.go"
 
 dependencies:
   - changed-files:
@@ -16,7 +16,6 @@ dependencies:
       - any-glob-to-any-file: "go.sum"
       - any-glob-to-any-file: mise.toml
       - any-glob-to-any-file: renovate.json5
-      - any-glob-to-any-file: renovate.json
 
 # Add 'Documentation' label to any changes within 'docs' folder or any subfolders
 documentation:
@@ -34,18 +33,17 @@ ci:
 repo:
   - changed-files:
       - any-glob-to-any-file: .codecov.yml
-      - any-glob-to-any-file: .codecov.yaml
       - any-glob-to-any-file: .chglog.yml
       - any-glob-to-any-file: .golangci.yml
-      - any-glob-to-any-file: .goreleaser.yaml
+      - any-glob-to-any-file: .goreleaser.yml
       - any-glob-to-any-file: .markdownlint.yaml
       - any-glob-to-any-file: "**/.markdownlint-cli2.yaml"
-      - any-glob-to-any-file: .prettierrc.yaml
+      - any-glob-to-any-file: .prettierrc.yml
       - any-glob-to-any-file: .yamlfmt.yml
       - any-glob-to-any-file: .yamllint.yml
-      - any-glob-to-any-file: changelog.yaml
+      - any-glob-to-any-file: changelog.yml
       - any-glob-to-any-file: cliff.toml
-      - any-glob-to-any-file: scripts/**.sh
+      - any-glob-to-any-file: "scripts/**/*.sh"
 
 docker:
   - changed-files:

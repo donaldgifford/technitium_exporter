@@ -33,6 +33,7 @@ created: 2026-08-02
       - [Changelog (H-7, M-2)](#changelog-h-7-m-2)
       - [Markdown lint (H-8)](#markdown-lint-h-8)
       - [Coverage gate (M-1)](#coverage-gate-m-1)
+      - [Housekeeping](#housekeeping)
     - [Success Criteria](#success-criteria-3)
   - [Phase 5: Retire the Makefile](#phase-5-retire-the-makefile)
     - [Tasks](#tasks-4)
@@ -505,46 +506,75 @@ the repo read as genuinely ported rather than copied.
 
 #### Tasks
 
-- [ ] L-1 — remove the unsubstituted `/${project_name}` line from `.gitignore`
+- [x] L-1 — remove the unsubstituted `/${project_name}` line from `.gitignore`
       and de-duplicate `*.test`, `*.out`, `.env`, `.idea/`, `.vscode/`, `dist/`
-      (each now appears twice); fix the `make release-local` comment
-- [ ] L-2 — remove `.golangci.yml` exclusions for absent dependencies
+      (each now appears twice); fix the `make release-local` comment. Rewrote
+      the file into one deduplicated set of sections; `/${project_name}` became
+      `/technitium_exporter`, which is what a bare `go build ./cmd/...` drops at
+      the root
+- [x] L-2 — remove `.golangci.yml` exclusions for absent dependencies
       (`github.com/fatih/color`, `github.com/spf13/cobra` — this project uses
       kingpin), the `cmd/(compare|diff)\.go$` and `mock_.*\.go$` paths, and the
       blanket `G304:` gosec exclusion justified as "CLI tool reads
-      user-specified file paths" (untrue of this exporter)
-- [ ] L-3 — remove `cobra-cli` and `mockery/v3` from `mise.toml`; neither is
+      user-specified file paths" (untrue of this exporter). All four verified
+      dead before removal: neither dependency is in `go.mod`, `cmd/` holds only
+      `main.go`, there are no `mock_*.go` files, and the exporter opens no files
+      at all — so the G304 exclusion could only ever have hidden a future real
+      finding
+- [x] L-3 — remove `cobra-cli` and `mockery/v3` from `mise.toml`; neither is
       used and both are installed on every `mise-action` CI job
-- [ ] L-4 — fix `catalog-info.yaml`'s `technitium_expoerter` typo
-- [ ] L-4 — run `docz wiki` to generate the `mkdocs.yml` that
+- [x] L-4 — fix `catalog-info.yaml`'s `technitium_expoerter` typo
+- [x] L-4 — run `docz wiki` to generate the `mkdocs.yml` that
       `techdocs-ref: "dir:."` requires (OQ-8a); `.docz.yaml`'s `wiki` block is
       already configured for it (techdocs-core, nav titles, exclusions), so this
       looks like a step that was simply never run. Verify the generated nav
-      covers all six docz types
-- [ ] L-5 — delete CODEOWNERS' "Replace @org/CHANGEME" instruction; the line
+      covers all six docz types — **confirmed**, 26 pages, all six types present
+- [x] L-5 — delete CODEOWNERS' "Replace @org/CHANGEME" instruction; the line
       below it is already correct
-- [ ] L-6 — remove `release.yml`'s duplicate syft install (lines 63-64 and
+- [x] L-6 — remove `release.yml`'s duplicate syft install (lines 63-64 and
       72-73) and the `publish-ghcr` comment describing a `chart` job and "two
       publish workflows" that do not exist here
-- [ ] L-7 — fix `ghcr.yml`'s `ecr.yml` reference and its bare `# $schema=`
+- [x] L-7 — fix `ghcr.yml`'s `ecr.yml` reference and its bare `# $schema=`
       directive (should be `# yaml-language-server: $schema=` pointing at
       `github-workflow.json`, as every other workflow does)
-- [ ] L-8 — fix `.github/labeler.yml`: the duplicate `Makefile` entry, and the
+- [x] L-8 — fix `.github/labeler.yml`: the duplicate `Makefile` entry, and the
       `repo` globs naming `.goreleaser.yaml`, `.prettierrc.yaml`,
       `changelog.yaml` when the real files use `.yml`
-- [ ] L-9 — restore `code-quality` and `testing` to `scripts/labels.sh`'s
+- [x] L-9 — restore `code-quality` and `testing` to `scripts/labels.sh`'s
       colour/description maps, or drop them from `.github/labeler.yml`; they
-      currently get created with the gray `EDEDED` fallback and no description
-- [ ] L-11 — commit `.claude/settings.json` and ignore the rest of `.claude/`
+      currently get created with the gray `EDEDED` fallback and no description.
+      Added to both maps, with descriptions matched to the labels' current live
+      values so a `--force` run is idempotent rather than overwriting them
+- [x] L-11 — commit `.claude/settings.json` and ignore the rest of `.claude/`
       (OQ-9a): add `.claude/*` plus a `!.claude/settings.json` negation to
-      `.gitignore`, replacing the narrow `donald-loop.local.md` rule
+      `.gitignore`, replacing the narrow `donald-loop.local.md` rule. The glob
+      form matters: git cannot re-include a file inside an ignored _directory_,
+      so `.claude/` would have made the negation a no-op
+- [x] **(unplanned)** Fix `.github/labeler.yml`'s `cmd/**.go` and `pkg/**.go`
+      globs. Both packages keep their sources one directory deeper
+      (`cmd/technitium_exporter/main.go`, `pkg/technitium/*.go`), which
+      `dir/**.go` does not match — so changes to the exporter's entry point and
+      its API client were never getting the `go` label. Now `dir/**/*.go`, which
+      matches zero or more intervening segments. Also dropped the
+      `renovate.json` and `.codecov.yaml` globs, alternate spellings of files
+      this repo does not have. Every remaining glob was verified to resolve
+- [x] **(unplanned)** Exclude the generated `mkdocs.yml` from yamllint and
+      yamlfmt. `docz wiki update` writes it with 4-space indent and no document
+      start, and reverts any formatting on the next run — verified by formatting
+      it and re-running docz. Same class of problem as `CHANGELOG.md`, and the
+      same resolution
+- [x] **(unplanned)** Add `just docs-index` and `just docs-wiki` so regenerating
+      the docz index tables and the mkdocs nav is a named step rather than a
+      command someone has to remember
 
 #### Success Criteria
 
 - No file contains an unsubstituted template placeholder or a reference to a
-  path, dependency, or workflow that does not exist in this repo
-- `just lint` still passes
-- `scripts/labels.sh --dry-run` proposes no gray-fallback labels
+  path, dependency, or workflow that does not exist in this repo — **met**;
+  every `.github/labeler.yml` glob was checked to resolve against the tree
+- `just lint` still passes — **met**
+- `scripts/labels.sh --dry-run` proposes no gray-fallback labels — **met**, all
+  17 labels resolve to an explicit colour and description
 
 ---
 
