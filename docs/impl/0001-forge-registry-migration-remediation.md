@@ -302,16 +302,15 @@ violations that the missing config had been hiding; `--fix` clears 27, leaving
       `<!-- prettier-ignore-start -->` / `<!-- prettier-ignore-end -->` instead,
       which sits outside the region `docz update` rewrites and so survives
       regeneration. Verified: `docz update` twice in a row is a no-op, and
-      `just lint-md` passes in either order.
-
-      Completed in Phase 8, once `docz update` had regenerated enough times to
-      expose the second half: the `<!--toc:start-->` block docz injects into
-      every doc body fights prettier the same way the index tables did. Same
-      markers, but they need a **blank line** separating them from the TOC —
-      placed flush, prettier reads the closing marker as a continuation of the
-      last (indented) TOC list item and re-indents it, which changes the file
-      it was supposed to leave alone. Verified stable over three
-      prettier → docz → prettier cycles and with docz run last
+      `just lint-md` passes in either order. Finished in Phase 8, once
+      `docz update` had regenerated enough times to expose the second half: the
+      `<!--toc:start-->` block docz injects into every doc body fights prettier
+      the same way the index tables did. Same markers, but they need a **blank
+      line** separating them from the TOC — placed flush, prettier reads the
+      closing marker as a continuation of the last (indented) TOC list item and
+      re-indents it, changing the very file it was supposed to leave alone.
+      Verified stable over three prettier → docz → prettier cycles and with docz
+      run last
 
 - [x] Verify `just lint-md` exits 0
 - [x] **(unplanned)** Add `.markdownlint-cli2.yaml` carrying `ignores:`.
