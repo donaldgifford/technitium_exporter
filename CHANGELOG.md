@@ -29,6 +29,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Update repo
 - Harden workflows -- concurrency, version pinning, dedup
+- Clear template residue from the donor repo
 
 ## [0.3.0] - 2026-02-12
 
