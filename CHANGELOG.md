@@ -19,6 +19,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(lint)* Make markdownlint config discoverable and the tree clean
 - *(test)* Make the coverage gate gate something
 - *(just)* Stop echoing recipe comments into build logs
+- *(docs)* Stop prettier and docz fighting over the TOC block
 
 ### Documentation
 
