@@ -18,6 +18,8 @@ created: 2026-08-02
 > request, and re-enabling the `main` ruleset). This document is kept as the
 > record of what was found and how it was verified.
 
+<!-- prettier-ignore-start -->
+
 <!--toc:start-->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
@@ -70,6 +72,8 @@ created: 2026-08-02
 - [Recommendation](#recommendation)
 - [References](#references)
 <!--toc:end-->
+
+<!-- prettier-ignore-end -->
 
 ## Question
 
