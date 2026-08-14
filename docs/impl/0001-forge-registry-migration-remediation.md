@@ -685,20 +685,43 @@ target.
 This is a tooling change, so verification is by executing the tooling rather
 than by new Go tests. The Go source is untouched.
 
-- [ ] `just ci` — the composite gate; must pass before merge
-- [ ] `just build && ./build/bin/technitium_exporter --version` — Phase 2 proof
-- [ ] `just docker-build && docker run --rm <image> --version` — Phase 3 proof
-- [ ] `just security`, `just trivy`, `just syft` — Phase 5 proof
-- [ ] `just run-local` with and without credentials set — Phase 5 proof
-- [ ] `git log -S <token> --all` returns empty — Phase 1 proof
+- [x] `just ci` — the composite gate; must pass before merge — **exit 0**
+- [x] `just build && ./build/bin/technitium_exporter --version` — Phase 2 proof
+- [x] `just docker-build && docker run --rm <image> --version` — Phase 3 proof.
+      Image reports `v0.3.0-26-g928bf04 (commit: 928bf04, built: …)`, with the
+      OCI `image.version` / `image.revision` labels matching and the container
+      running as `nonroot:nonroot`
+- [x] `just security`, `just trivy`, `just syft` — Phase 5 proof. All exit 0;
+      trivy reports 0 HIGH/CRITICAL in `go.mod`, syft writes both SBOMs
+- [x] `just run-local` with and without credentials set — Phase 5 proof.
+      Verified **unset only**: the guard fires with instructions and exits 1.
+      The credentials-present path is untested because the token is pending
+      rotation (Phase 1 owner-action) — this is the one item below that a live
+      server would close
+- [ ] `git log -S <token> --all` returns empty — Phase 1 proof. **Not met, as
+      expected.** Three commits still match (`00d895e`, `91bbe98`, `36c092a`),
+      and `git for-each-ref --contains` shows every one of them is reachable
+      _only_ from `refs/remotes/pr/*` — the local mirrors of GitHub's hidden
+      `refs/pull/*`. `main` and every branch are clean; this is the same
+      criterion as Phase 1's third bullet and it closes only when GitHub Support
+      GCs the unreachable objects. Note `--all` is what makes this visible: a
+      plain `git log -S` on the branches returns empty and would have been
+      falsely reassuring
 - [ ] Open a throwaway PR to confirm `changelog.yml`, the labeler, and the
       required-labels check all behave — several findings only manifest in a
-      real PR context
-- [ ] Confirm the coverage gate fails when the floor is raised above a real
-      package's coverage
+      real PR context. **Not done**: the branch has not been pushed, so no CI
+      run has exercised the rewritten `ci.yml`. Everything it runs has been
+      verified locally via `just ci`, but the fork-PR labeler guard, the
+      concurrency groups, and the merged `build` job's SBOM glob are only
+      observable on GitHub
+- [x] Confirm the coverage gate fails when the floor is raised above a real
+      package's coverage — fails at floor 95 (one package), at 99 (both), on a
+      stale package name, and when `coverage.out` is absent
 
 Regression watch: `just test` must stay green throughout. No phase should change
-`collector/` or `pkg/technitium/`.
+`collector/` or `pkg/technitium/`. **Held**: `just test` green at every commit,
+and `git diff --name-only main...HEAD -- collector/ pkg/technitium/` returns
+zero files.
 
 ## Dependencies
 
