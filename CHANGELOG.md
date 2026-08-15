@@ -5,19 +5,37 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(just)* Port the last Makefile targets and delete the Makefile
+
 ### Bug Fixes
 
 - *(makefile)* Remove hardcoded Technitium credentials
 - *(ci)* Pin trufflehog to v3.96.0, harden workflow
 - *(ci)* Correct SBOM glob, changelog escaping, snapshot version
+- *(build)* Inject version metadata with the correct ldflag symbols
+- *(docker)* Wire up the image pipeline end to end
+- *(lint)* Make markdownlint config discoverable and the tree clean
+- *(test)* Make the coverage gate gate something
+- *(just)* Stop echoing recipe comments into build logs
+- *(docs)* Stop prettier and docz fighting over the TOC block
 
 ### Documentation
 
 - Correct OQ-1 claim, add GitHub Support request
+- *(inv)* Record L-13, kingpin --version writes to stderr
+- Refresh CLAUDE.md for the post-migration repo
+- Record testing-plan results in IMPL-0001
+- Record testing-plan results in IMPL-0001
+- *(inv)* Record M-11 and L-14, found auditing the Phase 6 CI changes
+- Record PR #30 CI results in IMPL-0001's testing plan
 
 ### Miscellaneous Tasks
 
 - Update repo
+- Harden workflows -- concurrency, version pinning, dedup
+- Clear template residue from the donor repo
 
 ## [0.3.0] - 2026-02-12
 

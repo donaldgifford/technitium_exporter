@@ -27,9 +27,11 @@ docz create design "Your Design Title"
 - **Implemented**: Design has been fully implemented
 - **Abandoned**: Design was not pursued
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All Design
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 <!-- END DOCZ AUTO-GENERATED -->
+<!-- prettier-ignore-end -->

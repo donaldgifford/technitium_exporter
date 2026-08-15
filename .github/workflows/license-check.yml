@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   license-check:
     name: Check Dependency Licenses
@@ -23,15 +27,22 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install go-licenses
-        run: go install github.com/google/go-licenses@latest
+      # mise.toml pins go-licenses; `go install ...@latest` here meant CI could
+      # silently pick up a new version mid-PR and disagree with local runs.
+      - name: Set up mise
+        uses: jdx/mise-action@v4
+        with:
+          experimental: true
 
+      # Both recipes so the allow-list is defined once, in the justfile's
+      # `allowed_licenses`. It was previously spelled out again inline here,
+      # free to drift.
       - name: Check licenses
-        run: go-licenses check ./... --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0
+        run: just license-check
 
       - name: Generate license report
         if: always()
-        run: go-licenses report ./... --template=.github/licenses-csv.tpl > licenses.csv
+        run: just license-report > licenses.csv
 
       - name: Upload license report
         if: always()

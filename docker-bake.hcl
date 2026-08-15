@@ -39,12 +39,27 @@ function "tags" {
 target "_common" {
   dockerfile = "Dockerfile"
   context    = "."
+  // Without this block the Dockerfile's ARGs keep their defaults and the
+  // binary inside the image reports "dev" regardless of what is tagged.
+  // The OCI labels below describe the image; these describe the binary.
+  args = {
+    VERSION = "${VERSION}"
+    COMMIT  = "${COMMIT_SHA}"
+    DATE    = "${BUILD_DATE}"
+  }
   labels = {
     "org.opencontainers.image.source"   = "https://github.com/donaldgifford/technitium_exporter"
     "org.opencontainers.image.revision" = "${COMMIT_SHA}"
     "org.opencontainers.image.created"  = "${BUILD_DATE}"
     "org.opencontainers.image.version"  = "${VERSION}"
   }
+}
+
+// A bare `docker buildx bake` resolves the group named "default". Without
+// this it exits with "failed to find target default" rather than doing
+// anything sensible.
+group "default" {
+  targets = ["dev"]
 }
 
 // Local development build — single-arch, loads into Docker daemon.
@@ -65,7 +80,8 @@ target "ci" {
 }
 
 // Populated by docker/metadata-action in CI with computed tags and labels.
-// Default tags are used for local `make docker-push`; CI overrides via bake file merge.
+// The defaults here only apply to a local `just docker-buildx`; in CI the
+// metadata-action's generated bake file merges over them.
 target "docker-metadata-action" {
   tags = tags(VERSION)
 }

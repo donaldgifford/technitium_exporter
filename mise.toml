@@ -2,17 +2,13 @@
 
 # Go
 # renovate: datasource=github-tags depName=golang/go
-go = "1.26.5"
+go = "1.26.6"
 # renovate: datasource=github-releases depName=segmentio/golines
 golines = "latest"
 # renovate: datasource=go depName=golang.org/x/tools
 "go:golang.org/x/tools/cmd/goimports" = "latest"
 # renovate: datasource=go depName=golang.org/x/tools
 "go:golang.org/x/tools/cmd/godoc" = "latest"
-# renovate: datasource=go depName=spf13/cobra-cli
-"go:github.com/spf13/cobra-cli" = "latest"
-# renovate: datasource=go depName=vektra/mockery/v3
-"go:github.com/vektra/mockery/v3" = "latest"
 # renovate: datasource=go depName=goreleaser/chglog
 "go:github.com/goreleaser/chglog/cmd/chglog" = "latest"
 
@@ -50,6 +46,8 @@ golangci-lint = "2.12.2"
 # Security
 # renovate: datasource=github-releases depName=anchore/syft
 syft = "latest"
+# renovate: datasource=github-releases depName=aquasecurity/trivy
+trivy = "0.73.0"
 # renovate: datasource=go depName=golang.org/x/vuln
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
 

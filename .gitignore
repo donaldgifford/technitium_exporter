@@ -1,25 +1,6 @@
-# If you prefer the allow list template instead of the deny list, see community template:
+# If you prefer the allow list template instead of the deny list, see community
+# template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Go-specific (supplements registry-root .gitignore)
-*.test
-*.out
-*.exe
-coverage.txt
-coverage.html
-
-# Build output
-/dist/
-/bin/
-/${project_name}
-
-# IDE
-.vscode/
-.idea/
-
-# Local env
-.env
-.env.local
 
 # Binaries for programs and plugins
 *.exe
@@ -27,6 +8,13 @@ coverage.html
 *.dll
 *.so
 *.dylib
+*.test
+# `go build ./cmd/technitium_exporter` with no -o drops the binary here.
+/technitium_exporter
+
+# Build output
+build/
+dist/
 
 # Code coverage profiles and other test artifacts
 *.out
@@ -41,21 +29,21 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
+# Local env — where TECHNITIUM_URL / TECHNITIUM_TOKEN belong. Loaded
+# automatically by `set dotenv-load` in the justfile. Never commit credentials.
 .env
+.env.local
 
 # Editor/IDE
 .idea/
 .vscode/
 
-# Build directories
-build/
-
-# Goreleaser snapshot output (created by `make release-local`)
-dist/
-
-# donald-loop runtime state
-.claude/donald-loop.local.md
+# Claude Code: settings.json is shared project config and is tracked; the rest
+# of .claude/ is per-session machine state. The glob (not `.claude/`) matters --
+# git cannot re-include a file inside an ignored directory, so ignoring the
+# directory itself would make the negation below a no-op.
+.claude/*
+!.claude/settings.json
 
 # Scratch file holding the literal secret for git-filter-repo (never commit)
 .token-to-purge

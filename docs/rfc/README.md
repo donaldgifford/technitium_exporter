@@ -28,9 +28,11 @@ docz create rfc "Your RFC Title"
 - **Rejected**: Not moving forward with this proposal
 - **Superseded**: Replaced by another RFC
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All RFCs
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 <!-- END DOCZ AUTO-GENERATED -->
+<!-- prettier-ignore-end -->

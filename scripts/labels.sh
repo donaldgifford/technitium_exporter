@@ -37,6 +37,8 @@ declare -A LABEL_COLORS=(
   ["ai"]="D876E3"            # Purple - AI/ML
   ["repo"]="EDEDED"          # Gray - repo config
   ["docker"]="0DB7ED"        # Docker blue
+  ["code-quality"]="FBCA04"  # Amber - refactor/cleanup
+  ["testing"]="BFD4F2"       # Pale blue - tests
 
   # used in git-workflow claude skill
   ["feature"]="A2EEEF"  # Light cyan - feature
@@ -62,6 +64,8 @@ declare -A LABEL_DESCRIPTIONS=(
   ["ai"]="AI-related changes (docs/ai/, CLAUDE.md)"
   ["repo"]="Repository configuration (linters, codecov, etc.)"
   ["docker"]="Docker-related changes (Dockerfile)"
+  ["code-quality"]="Code quality and idioms"
+  ["testing"]="Test coverage and test improvements"
   # used in git-workflow claude skill
   ["feature"]="New feature or enhancement"
   ["fix"]="Small fix not a bug or feature"

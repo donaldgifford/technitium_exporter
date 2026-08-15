@@ -1,0 +1,41 @@
+markdown_extensions:
+    - admonition
+    - tables
+nav:
+    - Home: index.md
+    - ADRs:
+        - Overview: adr/README.md
+    - Building a Prometheus Exporter in Go: llms.md
+    - Design:
+        - Overview: design/README.md
+    - 'Exporter Enhancements Plan: New Metrics from Existing API': exporter-enhancements-plan.md
+    - 'Exporter Enhancements: Implementation Plan': exporter-enhancements-implementation.md
+    - Implementation Plans:
+        - Overview: impl/README.md
+        - 'IMPL-0001: Forge-registry migration remediation': impl/0001-forge-registry-migration-remediation.md
+    - Investigations:
+        - Overview: investigation/README.md
+        - 'INV-0001: Forge-registry template migration review': investigation/0001-forge-registry-template-migration-review.md
+    - 'Loki + Alloy Integration Plan: DNS Query Log Analytics': loki-alloy-integration-plan.md
+    - MVP Implementation Guide - technitium_exporter v0.0.1: MVP.md
+    - Plans:
+        - Overview: plan/README.md
+    - RFCs:
+        - Overview: rfc/README.md
+    - Review:
+        - Overview: review/README.md
+        - 'R-001: Token Passed in URL Query String': review/R-001-token-in-query-string.md
+        - 'R-002: Direct Error Comparison Instead of `errors.Is`': review/R-002-errors-is-comparison.md
+        - 'R-003: goimports Local Prefix Points to Wrong Project': review/R-003-goimports-prefix.md
+        - 'R-004: Silent Failure on Invalid SCRAPE_TIMEOUT': review/R-004-silent-env-parse.md
+        - 'R-005: No Size Limit on Response Body Reads': review/R-005-response-size-limit.md
+        - 'R-006: URL Built via String Concatenation': review/R-006-url-construction.md
+        - 'R-007: Hardcoded `context.Background()` in Collect': review/R-007-collect-context.md
+        - 'R-008: Duplicate Blocked Query Metric': review/R-008-duplicate-blocked-metric.md
+        - 'R-009: Test Helpers Don''t Accept `*testing.T`': review/R-009-test-helpers.md
+        - 'R-010: No Tests for Config and Exporter Packages': review/R-010-missing-tests.md
+    - Security Tooling Integration Plan: security-tooling-plan.md
+plugins:
+    - techdocs-core
+site_description: Documentation for technitium_exporter
+site_name: technitium_exporter

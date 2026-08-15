@@ -325,7 +325,7 @@ Can be auto-provisioned via Grafana dashboard ConfigMap.
 
 ## Project Structure
 
-```
+```text
 technitium-exporter/
 ├── main.go                 # Entry point
 ├── collector/

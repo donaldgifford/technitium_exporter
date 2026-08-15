@@ -13,7 +13,8 @@ Prometheus exporter for [Technitium DNS Server](https://technitium.com/dns/).
 
 ### Debian/Ubuntu (Recommended for Raspberry Pi)
 
-Download the latest `.deb` package from [Releases](https://github.com/donaldgifford/technitium_exporter/releases):
+Download the latest `.deb` package from
+[Releases](https://github.com/donaldgifford/technitium_exporter/releases):
 
 ```bash
 # Download (replace VERSION and ARCH as needed)
@@ -45,7 +46,8 @@ journalctl -u technitium_exporter -f
 
 ### Standalone Binary
 
-Download the appropriate binary from [Releases](https://github.com/donaldgifford/technitium_exporter/releases):
+Download the appropriate binary from
+[Releases](https://github.com/donaldgifford/technitium_exporter/releases):
 
 ```bash
 # Download (replace VERSION, OS, and ARCH as needed)
@@ -67,32 +69,32 @@ Metrics will be available at `http://localhost:9167/metrics`.
 
 ## Configuration
 
-| Flag | Environment Variable | Default | Description |
-|------|---------------------|---------|-------------|
-| `--technitium.url` | `TECHNITIUM_URL` | (required) | Technitium server URL |
-| `--technitium.token` | `TECHNITIUM_TOKEN` | (required) | API token |
-| `--web.listen-address` | `LISTEN_ADDRESS` | `:9167` | Address to listen on |
-| `--web.telemetry-path` | `METRICS_PATH` | `/metrics` | Path for metrics |
-| `--scrape.timeout` | `SCRAPE_TIMEOUT` | `10s` | Timeout for API calls |
-| `--log.level` | - | `info` | Log level (debug, info, warn, error) |
+| Flag                   | Environment Variable | Default    | Description                          |
+| ---------------------- | -------------------- | ---------- | ------------------------------------ |
+| `--technitium.url`     | `TECHNITIUM_URL`     | (required) | Technitium server URL                |
+| `--technitium.token`   | `TECHNITIUM_TOKEN`   | (required) | API token                            |
+| `--web.listen-address` | `LISTEN_ADDRESS`     | `:9167`    | Address to listen on                 |
+| `--web.telemetry-path` | `METRICS_PATH`       | `/metrics` | Path for metrics                     |
+| `--scrape.timeout`     | `SCRAPE_TIMEOUT`     | `10s`      | Timeout for API calls                |
+| `--log.level`          | -                    | `info`     | Log level (debug, info, warn, error) |
 
 Environment variables take precedence over flags.
 
 ## Metrics
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `technitium_up` | Gauge | Whether the server is reachable |
-| `technitium_scrape_duration_seconds` | Gauge | Time taken to scrape |
-| `technitium_server_info` | Gauge | Server info (version, domain labels) |
-| `technitium_queries_total` | Counter | Total DNS queries |
-| `technitium_responses_total` | Counter | Responses by rcode |
-| `technitium_queries_by_type_total` | Counter | Queries by type |
-| `technitium_blocked_queries_total` | Counter | Total blocked queries |
-| `technitium_blocklist_domains` | Gauge | Domains in blocklists |
-| `technitium_cache_entries` | Gauge | Current cache entries |
-| `technitium_clients_total` | Gauge | Unique clients seen |
-| `technitium_zones` | Gauge | Total zones |
+| Metric                               | Type    | Description                          |
+| ------------------------------------ | ------- | ------------------------------------ |
+| `technitium_up`                      | Gauge   | Whether the server is reachable      |
+| `technitium_scrape_duration_seconds` | Gauge   | Time taken to scrape                 |
+| `technitium_server_info`             | Gauge   | Server info (version, domain labels) |
+| `technitium_queries_total`           | Counter | Total DNS queries                    |
+| `technitium_responses_total`         | Counter | Responses by rcode                   |
+| `technitium_queries_by_type_total`   | Counter | Queries by type                      |
+| `technitium_blocked_queries_total`   | Counter | Total blocked queries                |
+| `technitium_blocklist_domains`       | Gauge   | Domains in blocklists                |
+| `technitium_cache_entries`           | Gauge   | Current cache entries                |
+| `technitium_clients_total`           | Gauge   | Unique clients seen                  |
+| `technitium_zones`                   | Gauge   | Total zones                          |
 
 ## Prometheus Configuration
 
@@ -100,9 +102,9 @@ Add to your `prometheus.yml`:
 
 ```yaml
 scrape_configs:
-  - job_name: 'technitium'
+  - job_name: "technitium"
     static_configs:
-      - targets: ['localhost:9167']
+      - targets: ["localhost:9167"]
 ```
 
 ## Building from Source
@@ -113,10 +115,10 @@ git clone https://github.com/donaldgifford/technitium_exporter.git
 cd technitium_exporter
 
 # Build
-make build
+just build
 
 # Run tests
-make test
+just test
 
 # Build packages (requires goreleaser)
 goreleaser release --snapshot --clean

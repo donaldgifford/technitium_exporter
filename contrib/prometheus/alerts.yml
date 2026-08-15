@@ -1,3 +1,4 @@
+---
 groups:
   - name: technitium_exporter
     rules:
@@ -41,7 +42,8 @@ groups:
           severity: warning
         annotations:
           summary: "High NXDOMAIN rate on Technitium DNS"
-          description: "More than 30% of DNS queries are returning NXDOMAIN. This could indicate misconfiguration or malicious activity."
+          description: "More than 30% of DNS queries are returning NXDOMAIN. This could indicate misconfiguration or malicious
+            activity."
 
       - alert: TechnitiumHighRefusedRate
         expr: |

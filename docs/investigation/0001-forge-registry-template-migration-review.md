@@ -12,6 +12,16 @@ created: 2026-08-02
 
 **Status:** Concluded **Author:** Donald Gifford **Date:** 2026-08-02
 
+> **Remediation landed.** 33 of the 35 findings below are addressed by
+> [IMPL-0001](../impl/0001-forge-registry-migration-remediation.md), except the
+> four Phase 1 owner-actions tracked there (token rotation, the GitHub Support
+> request, and re-enabling the `main` ruleset). M-11 and L-14 were found later,
+> while auditing that remediation, and are deliberately left open — see their
+> entries for why. This document is kept as the record of what was found and how
+> it was verified.
+
+<!-- prettier-ignore-start -->
+
 <!--toc:start-->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
@@ -52,6 +62,9 @@ created: 2026-08-02
   - [L-10. justfile run recipe: donor-repo doc comment, and missing env](#l-10-justfile-run-recipe-donor-repo-doc-comment-and-missing-env)
   - [L-11. .claude/ is untracked and not ignored](#l-11-claude-is-untracked-and-not-ignored)
   - [L-12. CLAUDE.md is now materially out of date](#l-12-claudemd-is-now-materially-out-of-date)
+  - [L-13. --version writes to stderr, not stdout](#l-13---version-writes-to-stderr-not-stdout)
+  - [M-11. syft has two sources of truth, and goreleaser picks whichever is on PATH](#m-11-syft-has-two-sources-of-truth-and-goreleaser-picks-whichever-is-on-path)
+  - [L-14. The CI lint job installs the whole toolchain to run four linters](#l-14-the-ci-lint-job-installs-the-whole-toolchain-to-run-four-linters)
   - [What is working](#what-is-working)
 - [Make to just migration](#make-to-just-migration)
   - [Missing — must port before deleting Makefile](#missing--must-port-before-deleting-makefile)
@@ -63,6 +76,8 @@ created: 2026-08-02
 - [Recommendation](#recommendation)
 - [References](#references)
 <!--toc:end-->
+
+<!-- prettier-ignore-end -->
 
 ## Question
 
@@ -533,6 +548,66 @@ Go 1.25.7 (actual 1.26.5); every command documented as `make ...`; a "test.yml"
 workflow that this branch deletes; `golang/govulncheck-action@v1` (actual:
 `donaldgifford/govulncheck-action@v1`); `trivy-action@0.33.1` (actual
 `v0.36.0`). Needs a pass once the just migration settles.
+
+### L-13. `--version` writes to stderr, not stdout
+
+Found while implementing Phase 2. `technitium_exporter --version` emits nothing
+on stdout:
+
+```text
+$ ./build/bin/technitium_exporter --version 2>/dev/null
+(empty)
+$ ./build/bin/technitium_exporter --version 2>&1 >/dev/null
+v0.3.0-9-g2a89950-dirty (commit: 2a89950, built: ...)
+```
+
+This is kingpin's default behaviour for `app.Version()`, not a bug in this
+repo's code, but it is surprising: `--version` is requested output, not a
+diagnostic, and most tooling expects it on stdout. Anything doing
+`technitium_exporter --version | grep ...` silently gets nothing — which is
+exactly what happened to `just build`'s verification echo before it was given a
+`2>&1`.
+
+### M-11. syft has two sources of truth, and goreleaser picks whichever is on PATH
+
+Found while auditing the Phase 6 CI changes. `mise.toml` pins `syft = "latest"`
+(resolving to 1.50.0 today), while `ci.yml` and `release.yml` both install syft
+with `anchore/sbom-action/download-syft@v0`, which fetches its own version at
+runtime.
+
+`.goreleaser.yml`'s `sboms` section does not name a syft binary — goreleaser
+shells out to whatever is first on `PATH`. So `just release-local` generates
+SBOMs with mise's syft and CI generates them with the action's, and nothing
+makes the two agree or reports when they diverge. The same is true of
+`just syft`, which uses mise's.
+
+This is the same class of finding as M-4 (golangci-lint pinned in two places),
+and it slipped past M-4's success criterion — "no workflow references a tool
+version that disagrees with `mise.toml`" — because the anchore action does not
+_reference_ a version, it resolves one. An SBOM is a supply-chain attestation,
+so "which tool produced it" is not a cosmetic question.
+
+Not fixed here: the remedy is to drop the anchore action and let mise-action
+supply syft in the build and release jobs, which changes the release path. That
+is worth doing deliberately, with a real release to verify, rather than folded
+into this branch untested.
+
+### L-14. The CI lint job installs the whole toolchain to run four linters
+
+Also found while auditing Phase 6. Pointing `ci.yml`'s `lint` job at `just lint`
+under `mise-action` made `mise.toml` authoritative (M-4) and closed the gap
+where CI never ran yamllint, markdownlint, prettier, or actionlint. The cost is
+that `mise-action` installs every tool in `mise.toml` — syft, trivy, git-cliff,
+chglog, docz, go-licenses, govulncheck, yq, jq and the rest — when the job needs
+five of them.
+
+`mise-action` caches, so this is a cold-cache cost rather than a per-run one,
+and it partly offsets the wall-clock won by merging the two goreleaser jobs
+(M-6). Worth measuring on a real run before optimising; the fix, if it is one,
+is a lint-only mise profile or an explicit tool list on that step.
+
+Not fixed: changing it means touching `cmd/`, which IMPL-0001 puts out of scope.
+Worth a follow-up issue if the exporter is ever scripted against.
 
 ### What is working
 

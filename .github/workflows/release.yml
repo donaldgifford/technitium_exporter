@@ -18,6 +18,12 @@ env:
   REGISTRY: ghcr.io
   IMAGE_REPO: donaldgifford/technitium_exporter
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # No cancellation: this workflow publishes a GitHub release and signed
+  # artifacts; cancelling mid-run leaves a partial release.
+  cancel-in-progress: false
+
 jobs:
   bump-version:
     name: Bump Version
@@ -69,11 +75,8 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
 
-      - name: Install Syft
-        uses: anchore/sbom-action/download-syft@v0
-
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@v7.1.0
         with:
           version: "~> v2"
           args: release --clean
@@ -81,12 +84,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
 
-  # The two publish workflows run on every main push, NOT gated on the
-  # binary release. The internal `image` job is gated on `inputs.tag != ''`
-  # so it only fires on a real release; the internal `chart` job is
-  # idempotent (skips when the chart version is already published).
-  # This lets chart-only changes (PR with `dont-release` label) publish
-  # the chart even though no binary release happened.
+  # ghcr.yml's `image` job is gated internally on `inputs.tag != ''`, so it
+  # only fires for a real release.
   publish-ghcr:
     name: Publish to GHCR
     needs: bump-version

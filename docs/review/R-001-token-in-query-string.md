@@ -19,7 +19,7 @@ reqURL := c.baseURL + endpoint + "?" + params.Encode()
 
 This results in requests like:
 
-```
+```http
 GET /api/dashboard/stats/get?token=SECRET&type=LastHour
 ```
 

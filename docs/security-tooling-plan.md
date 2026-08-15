@@ -2,24 +2,26 @@
 
 ## Context
 
-The project needs security scanning beyond what gosec (already in golangci-lint) provides. We agreed on four tools:
+The project needs security scanning beyond what gosec (already in golangci-lint)
+provides. We agreed on four tools:
 
 - **gosec** -- Already integrated via golangci-lint (no changes needed)
 - **govulncheck** -- Go source-level vulnerability analysis (call-graph aware)
 - **trivy** -- Dependency CVE scanning (and future container image scanning)
 - **syft** -- SBOM generation for release artifacts
 
-This plan adds local `make` targets for developer workflow, CI jobs for PR gating, and release-time SBOM generation.
+This plan adds local `make` targets for developer workflow, CI jobs for PR
+gating, and release-time SBOM generation.
 
 ## Files to Modify
 
-| File | Change | Status |
-|------|--------|--------|
-| `mise.toml` | Add govulncheck, trivy, syft | Done |
-| `Makefile` | Add `##@ Security` section with 4 targets | Done |
-| `.github/workflows/test.yml` | Add `security` job (govulncheck + trivy) | Done |
-| `.goreleaser.yml` | Add `sboms` section | Done |
-| `.github/workflows/release.yml` | Add syft install step before goreleaser | Done |
+| File                            | Change                                    | Status |
+| ------------------------------- | ----------------------------------------- | ------ |
+| `mise.toml`                     | Add govulncheck, trivy, syft              | Done   |
+| `Makefile`                      | Add `##@ Security` section with 4 targets | Done   |
+| `.github/workflows/test.yml`    | Add `security` job (govulncheck + trivy)  | Done   |
+| `.goreleaser.yml`               | Add `sboms` section                       | Done   |
+| `.github/workflows/release.yml` | Add syft install step before goreleaser   | Done   |
 
 ## Step 1: mise.toml -- Done
 
@@ -37,22 +39,25 @@ Verified: `mise install` succeeded, all three tools available via mise.
 
 Added `##@ Security` section with targets:
 
-| Target | Purpose |
-|--------|---------|
-| `govulncheck` | Source-level Go vulnerability check (`govulncheck ./...`) |
-| `trivy` | Dependency CVE scan (`trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .`) |
-| `syft` | Generate SPDX + CycloneDX SBOMs to `build/` |
-| `security` | Aggregate: runs `govulncheck` then `trivy` (not `syft` -- SBOM is artifact generation, not a check) |
+| Target        | Purpose                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `govulncheck` | Source-level Go vulnerability check (`govulncheck ./...`)                                           |
+| `trivy`       | Dependency CVE scan (`trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .`)           |
+| `syft`        | Generate SPDX + CycloneDX SBOMs to `build/`                                                         |
+| `security`    | Aggregate: runs `govulncheck` then `trivy` (not `syft` -- SBOM is artifact generation, not a check) |
 
 Also updated `clean` to remove SBOM files.
 
-Verified: `make trivy` and `make syft` pass. `make govulncheck` correctly reports Go 1.25.4 stdlib CVEs.
+Verified: `make trivy` and `make syft` pass. `make govulncheck` correctly
+reports Go 1.25.4 stdlib CVEs.
 
 ## Step 3: .github/workflows/test.yml -- Done
 
 Added `security` job running in parallel with existing jobs:
+
 - `golang/govulncheck-action@v1` for source-level vuln analysis
-- `aquasecurity/trivy-action@0.33.1` for dependency CVE scanning (HIGH/CRITICAL, exit-code 1)
+- `aquasecurity/trivy-action@0.33.1` for dependency CVE scanning (HIGH/CRITICAL,
+  exit-code 1)
 
 ## Step 4: .goreleaser.yml -- Done
 
@@ -65,17 +70,22 @@ sboms:
       - "{{ .ArtifactName }}.sbom.spdx.json"
 ```
 
-Verified: `make release-local` produces SPDX JSON SBOMs for each archive in `dist/`.
+Verified: `make release-local` produces SPDX JSON SBOMs for each archive in
+`dist/`.
 
 ## Step 5: .github/workflows/release.yml -- Done
 
-Added `anchore/sbom-action/download-syft@v0` step before GoReleaser in the release job.
+Added `anchore/sbom-action/download-syft@v0` step before GoReleaser in the
+release job.
 
 ## Explicitly Deferred
 
-- **Container image scanning** -- Dockerfile is empty. When Docker images are built, add `trivy image` scanning and `make trivy-image` target.
-- **SARIF upload to GitHub Security tab** -- Both tools support it but requires `security-events: write` permission. Clean follow-up.
-- **trivy misconfiguration/secret scanning** -- Enable when Dockerfiles or IaC configs are added.
+- **Container image scanning** -- Dockerfile is empty. When Docker images are
+  built, add `trivy image` scanning and `make trivy-image` target.
+- **SARIF upload to GitHub Security tab** -- Both tools support it but requires
+  `security-events: write` permission. Clean follow-up.
+- **trivy misconfiguration/secret scanning** -- Enable when Dockerfiles or IaC
+  configs are added.
 - **Signed SBOMs / cosign attestations** -- Supply chain hardening follow-up.
 
 ## Verification

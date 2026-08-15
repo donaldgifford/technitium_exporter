@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   labeler:
     permissions:
@@ -18,9 +22,15 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     name: Label PR
+    # `pull_request` hands fork PRs a read-only token, so labelling would fail
+    # on any external contribution. Skip rather than fail; the alternative,
+    # `pull_request_target`, runs with a writable token against untrusted head
+    # refs and is not worth it for cosmetic labels.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Checkout code
+      - name: Apply path labels
         uses: actions/labeler@v6
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -32,10 +42,21 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v9
+      # mise.toml is the single source of truth for tool versions. Running the
+      # same `just lint` recipe CI and developers run means golangci-lint cannot
+      # disagree between the two -- it previously pinned v2.11.4 here against
+      # 2.12.2 in mise.toml.
+      #
+      # This also covers yamllint, markdownlint, prettier and actionlint, none
+      # of which CI ran before. That gap is how a markdownlint config named
+      # `.markdowncilint.yml` -- a name the tool never looks for -- survived.
+      - name: Set up mise
+        uses: jdx/mise-action@v4
         with:
-          version: v2.11.4
+          experimental: true
+
+      - name: Run all linters
+        run: just lint
 
   test-go:
     name: Test Go
@@ -74,16 +95,20 @@ jobs:
       security-events: write
       contents: read
     steps:
+      # Needed by trivy below. govulncheck-action does not need it -- see the
+      # repo-checkout note on that step.
       - uses: actions/checkout@v6
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
+      # govulncheck-action is a composite action that runs its own
+      # actions/checkout and actions/setup-go internally, so no setup-go step
+      # is needed here. repo-checkout: false suppresses the second checkout,
+      # since the step above already did it. security.yml calls the same action
+      # with no checkout at all and is equally correct -- the difference is
+      # only that this job has a trivy step that does need the working tree.
       - name: Run govulncheck
         uses: donaldgifford/govulncheck-action@v1
         with:
+          repo-checkout: false
           go-version-file: go.mod
           go-package: ./...
 
@@ -96,45 +121,23 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
 
-  package-lint:
-    name: Package Lint (Debian)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Install Syft
-        uses: anchore/sbom-action/download-syft@v0
-
-      - name: Build deb packages
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: "~> v2"
-          args: release --snapshot --clean --skip=publish,sign
-
-      - name: Install lintian
-        run: sudo apt-get update && sudo apt-get install -y lintian
-
-      - name: Run lintian on deb package
-        run: |-
-          echo "Running lintian on amd64 package..."
-          lintian --no-cfg dist/technitium-exporter_*_amd64.deb
-          echo "Lintian check passed (warnings are acceptable)"
-
+  # Formerly two jobs, `build` and `package-lint`, each running a full
+  # `goreleaser release --snapshot` -- the most expensive step in CI, done
+  # twice for the same artifacts. Merged so it runs once and both the deb
+  # lint and the SBOM scan consume the same dist/.
   build:
-    name: Build
+    name: Build & Package
     runs-on: ubuntu-latest
     permissions:
       contents: read
       security-events: write
     steps:
+      # fetch-depth: 0 because goreleaser derives the snapshot version from
+      # tags. Without it the version_template silently resolves against a
+      # shallow clone with no tags.
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -148,7 +151,16 @@ jobs:
         uses: goreleaser/goreleaser-action@v7.1.0
         with:
           version: "~> v2"
-          args: release --snapshot --skip=publish --skip=sign --clean
+          args: release --snapshot --clean --skip=publish,sign
+
+      - name: Install lintian
+        run: sudo apt-get update && sudo apt-get install -y lintian
+
+      - name: Run lintian on deb package
+        run: |-
+          echo "Running lintian on amd64 package..."
+          lintian --no-cfg dist/technitium-exporter_*_amd64.deb
+          echo "Lintian check passed (warnings are acceptable)"
 
       # The archive name_template embeds the version, so the SBOM filename is not
       # knowable ahead of time -- resolve it by glob. The pattern must match what

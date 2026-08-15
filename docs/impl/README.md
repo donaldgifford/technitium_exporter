@@ -4,8 +4,8 @@ This directory contains implementation plans with concrete tasks and milestones.
 
 ## What are Implementation Plans?
 
-Implementation plans describe **the concrete steps to build a feature or system**.
-Each plan includes:
+Implementation plans describe **the concrete steps to build a feature or
+system**. Each plan includes:
 
 - **Objective**: What is being implemented and which RFC/design it implements
 - **Scope**: What is in and out of scope
@@ -27,10 +27,12 @@ docz create impl "Your Implementation Title"
 - **Paused**: Work is temporarily stopped
 - **Cancelled**: Plan was abandoned
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All Implementation Plans
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
-| IMPL-0001 | Forge-registry migration remediation | Draft | 2026-08-02 | Donald Gifford | [0001-forge-registry-migration-remediation.md](0001-forge-registry-migration-remediation.md) |
+| IMPL-0001 | Forge-registry migration remediation | In Progress | 2026-08-02 | Donald Gifford | [0001-forge-registry-migration-remediation.md](0001-forge-registry-migration-remediation.md) |
 <!-- END DOCZ AUTO-GENERATED -->
+<!-- prettier-ignore-end -->

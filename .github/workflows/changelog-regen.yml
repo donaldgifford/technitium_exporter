@@ -6,6 +6,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # No cancellation: this workflow pushes a chore(changelog) commit to main; a
+  # cancelled run can leave main un-synced and racing runs can double-commit.
+  cancel-in-progress: false
+
 # Loop guard: skip the run when the head commit is itself a
 # chore(changelog) auto-sync (this workflow's own output). Without this,
 # the chore(changelog) push the regen step makes would re-trigger the

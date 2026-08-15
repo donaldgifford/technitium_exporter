@@ -1,7 +1,7 @@
 ---
 id: IMPL-0001
 title: "Forge-registry migration remediation"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-08-02
 ---
@@ -10,10 +10,11 @@ created: 2026-08-02
 
 # IMPL 0001: Forge-registry migration remediation
 
-**Status:** Draft **Author:** Donald Gifford **Date:** 2026-08-02
+**Status:** In Progress **Author:** Donald Gifford **Date:** 2026-08-02
+
+<!-- prettier-ignore-start -->
 
 <!--toc:start-->
-
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -33,6 +34,7 @@ created: 2026-08-02
       - [Changelog (H-7, M-2)](#changelog-h-7-m-2)
       - [Markdown lint (H-8)](#markdown-lint-h-8)
       - [Coverage gate (M-1)](#coverage-gate-m-1)
+      - [Housekeeping](#housekeeping)
     - [Success Criteria](#success-criteria-3)
   - [Phase 5: Retire the Makefile](#phase-5-retire-the-makefile)
     - [Tasks](#tasks-4)
@@ -53,10 +55,13 @@ created: 2026-08-02
 - [References](#references)
 <!--toc:end-->
 
+<!-- prettier-ignore-end -->
+
 ## Objective
 
-Remediate the 33 findings from INV-0001 so the `chore/update-deps` branch is
-mergeable, then retire `Makefile` in favour of `justfile`.
+Remediate the 33 findings from INV-0001 (M-11 and L-14 were raised later, by the
+audit of this work, and are out of scope here) so the `chore/update-deps` branch
+is mergeable, then retire `Makefile` in favour of `justfile`.
 
 **Implements:** INV-0001
 
@@ -67,7 +72,14 @@ just ci && just docker-build && \
   docker run --rm ghcr.io/donaldgifford/technitium_exporter:dev --version
 ```
 
-Today it fails at `just lint-md`, the first step of `just ci`.
+That sequence is now green. All eight phases' repo-side tasks have landed.
+
+The doc is **In Progress** rather than Completed because four Phase 1
+owner-actions remain open, and they are the consequential ones: the leaked
+Technitium API token has not been rotated, the GitHub Support request to evict
+it from the `refs/pull/*` objects has not been submitted, and the `main`
+repository ruleset is still disabled from the force-push. None of those can be
+done from inside the repo. See Phase 1.
 
 ## Scope
 
@@ -118,39 +130,49 @@ so they can be closed rather than rebased.
 
 #### Tasks
 
-- [ ] Revoke the exposed token (see `Makefile` at commit `00d895e`) in the
-      Technitium admin UI and issue a replacement
-- [ ] Confirm the old token is rejected:
-      `curl -s "$URL/api/settings/get?token=<old>"` returns an auth failure
-- [ ] Audit the DNS server for use of the old token between `00d895e` and
-      revocation, to the extent the logs allow
-- [ ] Remove the `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` assignments from
-      `Makefile` (the file itself is deleted in Phase 5)
-- [ ] Purge the token from history with `git filter-repo` (OQ-1a), e.g.
-      `git filter-repo --replace-text .token-to-purge` with a
-      `<token>==>REDACTED` line in that gitignored file
-- [ ] Close the 6 superseded Dependabot PRs (#22, #23, #24, #25, #26, #27) with
+Repo-side work landed 2026-08-12 (PR #28, PR #29). The remaining items are
+owner-actions on the DNS server and on GitHub Support; they are **deferred by
+explicit decision**, not forgotten, and do not block Phases 2-8.
+
+- [x] Remove the `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` assignments from
+      `Makefile` (the file itself is deleted in Phase 5) — PR #28, replaced with
+      `-include .env` and a `require-technitium` guard
+- [x] Purge the token from history with `git filter-repo` (OQ-1a) — `main`
+      rewritten to `dfee94e`, 36 commits, zero blobs containing the credential
+- [x] Close the 6 superseded Dependabot PRs (#22, #23, #24, #25, #26, #27) with
       a note pointing at this branch
-- [ ] Force-push the rewritten history
-- [ ] File the GitHub Support request to GC unreachable objects and drop the
-      stale `refs/pull/*` refs (draft at
-      `.github/SUPPORT-REQUEST-purge-unreachable-objects.md`) — the force-push
-      alone does NOT evict them
-- [ ] Re-enable the `main` repository ruleset (id 12379777), disabled to permit
-      the force-push
-- [ ] After Support confirms, verify `00d895e` no longer resolves, then delete
-      the drafted ticket and the pre-purge backup bundle in `~`
-- [ ] Store the new token in a gitignored `.env` (never in a tracked file)
+- [x] Force-push the rewritten history — `main` and all three tags
+- [x] Draft the GitHub Support request to GC unreachable objects and drop the
+      stale `refs/pull/*` refs
+      (`.github/SUPPORT-REQUEST-purge-unreachable-objects.md`)
+- [ ] **[owner]** Revoke the exposed token in the Technitium admin UI and issue
+      a replacement, then store it in a gitignored `.env`
+- [ ] **[owner]** Confirm the old token is rejected, and audit the DNS server
+      for its use between `00d895e` and revocation
+- [ ] **[owner]** Submit the drafted Support ticket — the force-push alone does
+      NOT evict the objects; all 18 `refs/pull/N/head` refs still hold them, and
+      no client-side removal is possible
+- [ ] **[owner]** Re-enable the `main` repository ruleset (id 12379777),
+      disabled to permit the force-push and still `disabled` as of 2026-08-12
+- [ ] **[owner]** After Support confirms, verify `00d895e` no longer resolves,
+      then delete the drafted ticket and the pre-purge backup bundle in `~` (the
+      bundle contains the original credential)
 
 #### Success Criteria
 
-- A fresh clone contains zero blobs with the credential (done — verified
-  2026-08-12)
+- A fresh clone contains zero blobs with the credential — **met**, verified
+  2026-08-12
+- No open PR references a pre-rewrite SHA — **met**, all 6 closed and branches
+  deleted
 - `gh api "repos/.../contents/Makefile?ref=00d895e"` no longer returns the token
-  — this is the criterion that distinguishes a rewritten branch from an actually
-  purged repo, and it is **not** satisfied by the force-push alone
-- The old token is confirmed rejected by the live server
-- No open PR references a pre-rewrite SHA
+  — **not met**, and not achievable client-side. This is the criterion that
+  distinguishes a rewritten branch from an actually purged repo; it needs the
+  Support ticket
+- The old token is confirmed rejected by the live server — **not met**, owner
+  action
+
+Phase 1 is therefore _complete for everything doable in this repo_ and open on
+four owner-actions. Phases 2-8 proceed independently.
 
 ---
 
@@ -167,24 +189,27 @@ correctly and is not changed.
 
 #### Tasks
 
-- [ ] `justfile:31` — change `-X main.version/commit/date` to
+- [x] `justfile:31` — change `-X main.version/commit/date` to
       `-X main.Version/Commit/BuildDate`
-- [ ] `Dockerfile:16` — same symbol rename
-- [ ] `Dockerfile:16` — change `$${VERSION}` / `$${COMMIT}` / `$${DATE}` to a
+- [x] `Dockerfile:16` — same symbol rename
+- [x] `Dockerfile:16` — change `$${VERSION}` / `$${COMMIT}` / `$${DATE}` to a
       single `$` (`RUN` is not on Docker's substitution list, so `$$` reaches
       the shell and expands to its PID)
-- [ ] `docker-bake.hcl` — add an `args` block to `_common` mapping `VERSION`,
+- [x] `docker-bake.hcl` — add an `args` block to `_common` mapping `VERSION`,
       `COMMIT`, `DATE` to the existing `VERSION` / `COMMIT_SHA` / `BUILD_DATE`
       bake variables
-- [ ] Verify the three ldflag symbol names against `main.go` rather than against
+- [x] Verify the three ldflag symbol names against `main.go` rather than against
       each other
-- [ ] Re-check that `just build`'s success `echo` reports the version actually
+- [x] Re-check that `just build`'s success `echo` reports the version actually
       compiled in, not the `just` variable
 
 #### Success Criteria
 
 - `just build && ./build/bin/technitium_exporter --version` prints a real
-  version, commit, and date — not `dev (commit: none, built: unknown)`
+  version, commit, and date — not `dev (commit: none, built: unknown)`. **Met**
+  — now reports `v0.3.0-9-g2a89950-dirty (commit: 2a89950, built: ...)`. Note
+  kingpin writes `--version` to **stderr**, not stdout, so the recipe's
+  verification echo needs `2>&1`; see L-13 in INV-0001
 - `docker buildx bake dev --print` shows an `args` key on the target
 - The version string contains no `{VERSION}` fragment and no bare PID
 
@@ -197,17 +222,26 @@ injects; this phase makes the recipes reachable and the bake invocation valid.
 
 #### Tasks
 
-- [ ] Add `import 'docker.just'` to `justfile` (H-5) — `docker.just` documents
+- [x] Add `import 'docker.just'` to `justfile` (H-5) — `docker.just` documents
       this requirement in its own header but nothing does it
-- [ ] Add `group "default" { targets = ["dev"] }` to `docker-bake.hcl` (H-6) —
+- [x] Add `group "default" { targets = ["dev"] }` to `docker-bake.hcl` (H-6) —
       bare `docker buildx bake` currently exits with
       `ERROR: failed to find target default`
-- [ ] Delete the `docker-push` recipe from `docker.just` (OQ-2a) — it runs
+- [x] Delete the `docker-push` recipe from `docker.just` (OQ-2a) — it runs
       `bake --push` against a `dev` target whose `output` is `type=docker`,
       which contradicts itself, and duplicates `docker-buildx`. Releases push
       from `ghcr.yml` on a tag, not from a laptop
-- [ ] Update `docker-bake.hcl:68`'s stale `make docker-push` comment reference
-- [ ] Confirm `just --list` shows all four docker recipes
+- [x] Update `docker-bake.hcl:68`'s stale `make docker-push` comment reference
+- [x] Confirm `just --list` shows the docker recipes — three, not four;
+      `docker-push` was deleted per OQ-2a
+- [x] **(unplanned)** Remove `set shell` from `docker.just`. `just` permits a
+      setting to be defined only once across a justfile and its imports, so
+      adding the import alone made `just` refuse to parse _anything_:
+      `error: setting 'shell' first set on line 5 is redefined on line 7`
+- [x] **(unplanned)** Export `VERSION` / `COMMIT_SHA` / `BUILD_DATE` from
+      `docker.just`. Phase 2 taught `docker-bake.hcl` to forward build args, but
+      nothing was setting the bake variables, so a local `just docker-build`
+      still produced an image reporting `dev`
 
 #### Success Criteria
 
@@ -216,7 +250,9 @@ injects; this phase makes the recipes reachable and the bake invocation valid.
 - `just docker-build` completes and loads an image into the local daemon
 - `docker run --rm ghcr.io/donaldgifford/technitium_exporter:dev --version`
   reports the correct version — this is the end-to-end proof for Phases 2 and 3
-  together
+  together. **Met**: reports
+  `v0.3.0-11-g6b187af-dirty (commit: 6b187af, built: 2026-08-13T03:16:19Z)`,
+  with OCI labels populated to match and the image running as `nonroot`
 - `docker buildx bake ci --print` still resolves both platforms
 
 ---
@@ -234,58 +270,101 @@ violations that the missing config had been hiding; `--fix` clears 27, leaving
 
 ##### Changelog (H-7, M-2)
 
-- [ ] Fix `cliff.toml:50` — `$${2}` → `${2}` in `commit_preprocessors` (`$$` is
+- [x] Fix `cliff.toml:50` — `$${2}` → `${2}` in `commit_preprocessors` (`$$` is
       an escaped literal `$` in the Rust regex replacer, so PR links currently
-      render as `[#${2}](…/issues/${2})`)
-- [ ] Run `just changelog` and commit the regenerated `CHANGELOG.md`
-- [ ] Verify `just changelog-check` exits 0
-- [ ] Confirm `CHANGELOG.md` is listed in `.prettierignore` so `just fmt-md`
-      cannot reflow it back into drift
+      render as `[#${2}](…/issues/${2})`) — landed in PR #28
+- [x] Run `just changelog` and commit the regenerated `CHANGELOG.md`
+- [x] Verify `just changelog-check` exits 0 — the sync commit itself is excluded
+      by `cliff.toml`'s `^chore.*[Cc]hangelog` skip parser, so regenerating does
+      not immediately re-stale the file. Note the standing friction this
+      implies: every PR needs a trailing `chore(changelog):` commit (see
+      Phase 6)
+- [x] Confirm `CHANGELOG.md` is listed in `.prettierignore` so `just fmt-md`
+      cannot reflow it back into drift — landed in PR #28
 
 ##### Markdown lint (H-8)
 
-- [ ] `git mv .markdowncilint.yml .markdownlint.yaml` — **not**
+- [x] `git mv .markdowncilint.yml .markdownlint.yaml` — **not**
       `.markdownlint-cli2.yaml`; the file holds top-level plain rules
       (`MD013: false`, …), which is the format `.markdownlint.yaml` expects.
       Verified both ways: the cli2 wrapper name ignores top-level rules and
       MD013 keeps firing
-- [ ] Run `prettier --write "**/*.md"` first, then `markdownlint-cli2 --fix`
+- [x] Run `prettier --write "**/*.md"` first, then `markdownlint-cli2 --fix`
       (prettier's blank-line handling resolves most MD031/MD032 before
       markdownlint has to)
-- [ ] Hand-fix the 21 MD040 violations by adding a language to each bare code
+- [x] Hand-fix the 21 MD040 violations by adding a language to each bare code
       fence
-- [ ] Fix `MAINTAINERS.md:1` MD041 (add a top-level heading)
-- [ ] Fix `docs/llms.md:256` MD024 (duplicate "Key Rules" heading)
-- [ ] Add the docz-generated surfaces to `.prettierignore` (OQ-3a): the 6
-      `docs/*/README.md` index files, and whatever is needed to stop prettier
-      fighting the `<!--toc:start-->` block docz injects into every doc body.
-      Confirm the fix by running `docz update` then `just lint-md` and checking
-      that order no longer matters
-- [ ] Verify `just lint-md` exits 0
+- [x] Fix `MAINTAINERS.md:1` MD041 (add a top-level heading)
+- [x] Fix `docs/llms.md:256` MD024 (duplicate "Key Rules" heading)
+- [x] Stop prettier fighting the docz-generated surfaces (OQ-3a). Implemented
+      **not** via `.prettierignore` as planned — that is whole-file only, and
+      the 6 `docs/*/README.md` index files are mostly hand-written prose that
+      should stay formatted. Wrapped each `<!-- BEGIN/END DOCZ -->` block in
+      `<!-- prettier-ignore-start -->` / `<!-- prettier-ignore-end -->` instead,
+      which sits outside the region `docz update` rewrites and so survives
+      regeneration. Verified: `docz update` twice in a row is a no-op, and
+      `just lint-md` passes in either order. Finished in Phase 8, once
+      `docz update` had regenerated enough times to expose the second half: the
+      `<!--toc:start-->` block docz injects into every doc body fights prettier
+      the same way the index tables did. Same markers, but they need a **blank
+      line** separating them from the TOC — placed flush, prettier reads the
+      closing marker as a continuation of the last (indented) TOC list item and
+      re-indents it, changing the very file it was supposed to leave alone.
+      Verified stable over three prettier → docz → prettier cycles and with docz
+      run last
+
+- [x] Verify `just lint-md` exits 0
+- [x] **(unplanned)** Add `.markdownlint-cli2.yaml` carrying `ignores:`.
+      `.markdownlintignore` is a markdownlint-**cli** (v1) feature and is
+      silently ignored by cli2, so the first attempt at excluding `CHANGELOG.md`
+      and `.claude/` changed nothing. cli2 options and lint rules are separate
+      files: rules stay in `.markdownlint.yaml`, `ignores` has to live in the
+      cli2 config
+- [x] **(unplanned)** Delete the stray second, empty
+      `<!-- BEGIN/END DOCZ AUTO-GENERATED -->` pair at the tail of
+      `docs/investigation/README.md` and `docs/plan/README.md`. Pre-existing;
+      `docz update` populates the first pair only, so the second was dead weight
+      that a future `docz` could have filled instead
 
 ##### Coverage gate (M-1)
 
-- [ ] Re-point `justfile:84`'s `internal/` prefix at `collector/` and
+- [x] Re-point `justfile:84`'s `internal/` prefix at `collector/` and
       `pkg/technitium/` only (OQ-4a). Current per-package coverage: `collector`
       96.9%, `pkg/technitium` 91.5%, `config` 0%, `exporter` 0%, `cmd` 0% — both
-      gated packages clear the 60% floor comfortably today
-- [ ] Leave a comment in the recipe naming `config/` and `exporter/` as
+      gated packages clear the 60% floor comfortably today. Implemented as an
+      explicit `gated_packages` list rather than a second path prefix, so adding
+      a package is a one-word edit and the set is auditable at a glance
+- [x] Leave a comment in the recipe naming `config/` and `exporter/` as
       deliberately ungated pending issue #15, so the omission reads as a
       decision rather than an oversight
-- [ ] Fix the recipe's inline comment, which claims `.codecov.yml` ignores
+- [x] Fix the recipe's inline comment, which claims `.codecov.yml` ignores
       `cmd/`; it actually ignores `main.go`, `docs`, `scripts`
-- [ ] Ensure the gate can actually fail — verify by temporarily lowering the
+- [x] Ensure the gate can actually fail — verify by temporarily lowering the
       floor above a real package's coverage
+- [x] **(unplanned)** Treat a gated package with no rows in `coverage.out` as a
+      failure rather than a silent skip. This is the same fail-open bug the
+      `internal/` prefix had, one rename away from returning: without it, a typo
+      in `gated_packages` retires the gate and still exits 0
+
+##### Housekeeping
+
+- [x] **(unplanned)** Prefix the explanatory comments inside the `build` and
+      `fmt-go` recipe bodies with `@`. `just` echoes every un-prefixed recipe
+      line before running it, comments included, so the Phase 2 comments were
+      being printed into every local and CI build log
 
 #### Success Criteria
 
-- `just lint-md` exits 0
-- `just changelog-check` exits 0
+- `just lint-md` exits 0 — **met**, 31 files, 0 errors, prettier clean
+- `just changelog-check` exits 0 — **met**
 - `just coverage-gate` reports at least one real package, and a deliberately
-  raised floor makes it fail
-- `just ci` passes end to end — the first time on this branch
+  raised floor makes it fail — **met**: reports `collector` 96.9% and
+  `pkg/technitium` 91.5%; fails at floor 95 (one package), at floor 99 (both),
+  on a stale package name, and when `coverage.out` is absent
+- `just ci` passes end to end — the first time on this branch — **met**, exit 0
 - A test commit of the form `feat: thing (#42)` renders as a working link in
-  regenerated changelog output
+  regenerated changelog output — **met**, renders as
+  `[#42](https://github.com/donaldgifford/technitium_exporter/issues/42)`
 
 ---
 
@@ -301,35 +380,55 @@ Neither `run-local` nor `test-api` may carry the hardcoded credentials forward
 
 #### Tasks
 
-- [ ] Re-add the `trivy` pin to `mise.toml` with a `# renovate:` annotation
-      matching the surrounding style
-- [ ] Add `just trivy` —
+- [x] Re-add the `trivy` pin to `mise.toml` with a `# renovate:` annotation
+      matching the surrounding style — pinned `0.73.0`, matching the explicit
+      pins used for the other linters rather than `latest`
+- [x] Add `just trivy` —
       `trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .`
-- [ ] Add `just syft` — SBOM generation (SPDX + CycloneDX) into `build/`
-- [ ] Add `just security` — composite of `govulncheck` + `trivy`
-- [ ] Add `just run-local` reading `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` from
+- [x] Add `just syft` — SBOM generation (SPDX + CycloneDX) into `build/`
+- [x] Add `just security` — composite of `govulncheck` + `trivy`
+- [x] Add `just run-local` reading `TECHNITIUM_URL` / `TECHNITIUM_TOKEN` from
       the environment, with a clear error when unset
-- [ ] Add `just test-api` — the two `curl` calls through `jq`, same env sourcing
-- [ ] Fix `justfile`'s `run` recipe (L-10): replace the donor-repo doc comment
+- [x] Add `just test-api` — the two `curl` calls through `jq`, same env
+      sourcing. Added `curl -f` while porting: without it an HTTP error status
+      pipes the error body into `jq` and the recipe exits 0
+- [x] Fix `justfile`'s `run` recipe (L-10): replace the donor-repo doc comment
       ("just run plan -config-dir ./approved-providers") and source credentials
       from the environment
-- [ ] Spot-check that `just fmt-go` preserves `make fmt`'s local-import grouping
+- [x] Spot-check that `just fmt-go` preserves `make fmt`'s local-import grouping
       — `Makefile` passed `-local github.com/donaldgifford` explicitly;
       `just fmt-go` relies on `.golangci.yml`'s `gci`/`goimports` prefixes to do
-      the same
-- [ ] `git rm Makefile`
-- [ ] Remove both `Makefile` entries from `.github/labeler.yml`'s `ci` section
+      the same. Verified by scrambling `collector/collector.go`'s import block
+      (local first, third-party interleaved with stdlib) and confirming
+      `just fmt-go` restores it byte-identically
+- [x] `git rm Makefile`
+- [x] Remove both `Makefile` entries from `.github/labeler.yml`'s `ci` section
       (it is listed twice — L-8), keep `justfile`
-- [ ] Grep the repo for surviving `make` references and update them
+- [x] Grep the repo for surviving `make` references and update them
+- [x] **(unplanned)** Add `set dotenv-load := true`. The `Makefile` had
+      `-include .env`; without an equivalent, the ported credential recipes
+      would only ever work from an already-exported shell
+- [x] **(unplanned)** Add `*.just` to `.github/labeler.yml`'s `ci` globs — Phase
+      3 split the recipes across `justfile` and `docker.just`, and the
+      `justfile` glob does not match the latter
+- [x] **(unplanned)** Replace the four `Bash(make …)` entries in
+      `.claude/settings.json` with `Bash(just *)`
 
 #### Success Criteria
 
-- `Makefile` is gone and `git grep -n "make "` returns no stale instructions
-- `just security`, `just trivy`, `just syft` all run to completion
+- `Makefile` is gone and `git grep -n "make "` returns no stale instructions —
+  **met**. Completed planning and verification records (`docs/MVP.md`,
+  `docs/exporter-enhancements-*`, `docs/security-tooling-plan.md`,
+  `docs/review/`, and the drafted Support request) deliberately keep their
+  `make` references: they record what was actually run at the time, and
+  rewriting them would falsify the record
+- `just security`, `just trivy`, `just syft` all run to completion — **met**,
+  trivy reports 0 vulnerabilities in `go.mod`, syft writes both SBOMs
 - `just run-local` fails with a clear message when credentials are unset, and
-  works when they are
+  works when they are — **met** for the guard; the live-server half is not
+  exercised here because the token is pending rotation (Phase 1 owner action)
 - Every command documented in CLAUDE.md's build section resolves to a real
-  `just` recipe
+  `just` recipe — **met**, all 13 verified via `just --show`
 
 ---
 
@@ -340,40 +439,82 @@ on fork PRs.
 
 #### Tasks
 
-- [ ] M-4 — install golangci-lint via `mise-action` in CI and drop the
+- [x] M-4 — install golangci-lint via `mise-action` in CI and drop the
       `version:` input from `golangci-lint-action` (OQ-5a), making `mise.toml`
       the single source of truth. CI pins `v2.11.4` today, `mise.toml` pins
-      `2.12.2`
-- [ ] M-6 — give `ci.yml`'s `build` job `fetch-depth: 0` (goreleaser needs tags;
+      `2.12.2`. **Implemented differently**: `golangci-lint-action` installs its
+      own binary regardless of what is already on `PATH`, so mise-action plus
+      that action would not have made `mise.toml` authoritative. Replaced the
+      action with `mise-action` + `run: just lint`
+- [x] M-6 — give `ci.yml`'s `build` job `fetch-depth: 0` (goreleaser needs tags;
       `package-lint` already has it), and align the two jobs on one
-      `goreleaser-action` major (currently `v6` and `v7.1.0`)
-- [ ] M-6 — deduplicate the two full `goreleaser release --snapshot` runs across
-      `build` and `package-lint`
-- [ ] M-7 — fix the `labeler` job: the step is named "Checkout code" but is
+      `goreleaser-action` major (currently `v6` and `v7.1.0`). Also aligned
+      `release.yml` from the floating `@v7` onto the same `@v7.1.0`, so the
+      snapshot CI validates with is built by the same goreleaser that cuts the
+      real release
+- [x] M-6 — deduplicate the two full `goreleaser release --snapshot` runs across
+      `build` and `package-lint` — merged into one `build` job; lintian and the
+      SBOM scan now consume the same `dist/`
+- [x] M-7 — fix the `labeler` job: the step is named "Checkout code" but is
       `actions/labeler@v6`, and `pull_request` yields a read-only token on fork
-      PRs, so it will fail on external contributions
-- [ ] M-8 — make `security.yml` consistent with `ci.yml`'s security job on
-      whether `donaldgifford/govulncheck-action` needs a preceding checkout
-- [ ] M-9 — add `concurrency` groups to all workflows; use
+      PRs, so it will fail on external contributions. Renamed the step and
+      guarded the job on the head repo being this repo. Chose skip-on-fork over
+      `pull_request_target`, which would run with a writable token against an
+      untrusted head ref — too much risk for cosmetic labels
+- [x] M-8 — make `security.yml` consistent with `ci.yml`'s security job on
+      whether `donaldgifford/govulncheck-action` needs a preceding checkout.
+      Resolved by reading the action: it is a composite whose first step is its
+      own `actions/checkout` (input `repo-checkout`, default true), and it runs
+      `actions/setup-go` itself. So `security.yml` was already correct and
+      `ci.yml` had a redundant checkout + setup-go. `ci.yml` keeps its checkout
+      (trivy needs the tree) but now passes `repo-checkout: false`; the
+      redundant `setup-go` is gone. Both files document the asymmetry
+- [x] M-9 — add `concurrency` groups to all workflows; use
       `cancel-in-progress: false` for `changelog-regen.yml`, which pushes to
-      `main` and can race with itself
-- [ ] M-10 — replace `license-check.yml`'s
+      `main` and can race with itself. Applied to 10 workflows (trufflehog
+      already had one); `release.yml` and `ghcr.yml` also got
+      `cancel-in-progress: false` on the same reasoning — cancelling a partial
+      release or a partial manifest-list push is worse than a redundant run
+- [x] M-10 — replace `license-check.yml`'s
       `go install github.com/google/go-licenses@latest` with the `mise.toml` pin
-      via `mise-action`
-- [ ] M-3 — remove `.github/` from `.yamllint.yml`'s ignore list (OQ-6a) and fix
+      via `mise-action`. Switched the steps to `just license-check` /
+      `just license-report` too, so the licence allow-list is defined once in
+      the justfile instead of being spelled out again inline
+- [x] M-3 — remove `.github/` from `.yamllint.yml`'s ignore list (OQ-6a) and fix
       whatever surfaces across the 11 workflow files; also drop the dead
-      `.charts/` and `config/testdata/section_key_dup.bad.yml` entries
-- [ ] M-5 — keep both chglog and git-cliff (OQ-7a) and make the split explicit:
+      `.charts/` and `config/testdata/section_key_dup.bad.yml` entries. Four
+      errors surfaced, all `empty-values` on bare Actions triggers
+      (`pull_request:`, `workflow_dispatch:`). Turned off
+      `empty-values.forbid-in-block-mappings` rather than adding a
+      `# yamllint disable-line` to every trigger in every workflow forever;
+      yamllint has no per-path rule overrides. Added `build/` and `dist/` to the
+      ignore list, which were being linted as if they were source
+- [x] M-5 — keep both chglog and git-cliff (OQ-7a) and make the split explicit:
       add `just` recipes for the chglog side (deb package changelog) alongside
       the existing git-cliff ones (repo `CHANGELOG.md`), and document which
-      artifact each one feeds
+      artifact each one feeds — added `changelog-deb` and `changelog-deb-add`
+      under a header comment stating the split
+- [x] **(unplanned)** Make CI actually run the non-Go linters. No workflow ran
+      yamllint, markdownlint, prettier, or actionlint — `just lint` covered them
+      locally but CI only ever ran golangci-lint. That gap is precisely how H-8
+      survived: a markdownlint config named `.markdowncilint.yml`, a name the
+      tool never looks for, sat unread with nothing to catch it. Folded into the
+      M-4 change, since the `lint` job now runs `just lint` wholesale
 
 #### Success Criteria
 
-- CI wall-clock drops measurably (one goreleaser snapshot run, not two)
-- A PR from a fork does not fail the labeler job
-- Local and CI golangci-lint report identical results on the same commit
-- No workflow references a tool version that disagrees with `mise.toml`
+- CI wall-clock drops measurably (one goreleaser snapshot run, not two) — **met
+  by construction**; `build` and `package-lint` are one job. Not yet measured
+  against a real run
+- A PR from a fork does not fail the labeler job — **met**, the job is skipped
+  when `head.repo.full_name` differs from the repo
+- Local and CI golangci-lint report identical results on the same commit —
+  **met**, both now resolve the binary from `mise.toml` and run `just lint-go`
+- No workflow references a tool version that disagrees with `mise.toml` —
+  **met**
+- `just lint` passes with `.github/` no longer excluded from yamllint — **met**,
+  0 errors; the 7 remaining `line-length` findings are warnings by config and
+  all pre-date this phase
 
 ---
 
@@ -385,46 +526,75 @@ the repo read as genuinely ported rather than copied.
 
 #### Tasks
 
-- [ ] L-1 — remove the unsubstituted `/${project_name}` line from `.gitignore`
+- [x] L-1 — remove the unsubstituted `/${project_name}` line from `.gitignore`
       and de-duplicate `*.test`, `*.out`, `.env`, `.idea/`, `.vscode/`, `dist/`
-      (each now appears twice); fix the `make release-local` comment
-- [ ] L-2 — remove `.golangci.yml` exclusions for absent dependencies
+      (each now appears twice); fix the `make release-local` comment. Rewrote
+      the file into one deduplicated set of sections; `/${project_name}` became
+      `/technitium_exporter`, which is what a bare `go build ./cmd/...` drops at
+      the root
+- [x] L-2 — remove `.golangci.yml` exclusions for absent dependencies
       (`github.com/fatih/color`, `github.com/spf13/cobra` — this project uses
       kingpin), the `cmd/(compare|diff)\.go$` and `mock_.*\.go$` paths, and the
       blanket `G304:` gosec exclusion justified as "CLI tool reads
-      user-specified file paths" (untrue of this exporter)
-- [ ] L-3 — remove `cobra-cli` and `mockery/v3` from `mise.toml`; neither is
+      user-specified file paths" (untrue of this exporter). All four verified
+      dead before removal: neither dependency is in `go.mod`, `cmd/` holds only
+      `main.go`, there are no `mock_*.go` files, and the exporter opens no files
+      at all — so the G304 exclusion could only ever have hidden a future real
+      finding
+- [x] L-3 — remove `cobra-cli` and `mockery/v3` from `mise.toml`; neither is
       used and both are installed on every `mise-action` CI job
-- [ ] L-4 — fix `catalog-info.yaml`'s `technitium_expoerter` typo
-- [ ] L-4 — run `docz wiki` to generate the `mkdocs.yml` that
+- [x] L-4 — fix `catalog-info.yaml`'s `technitium_expoerter` typo
+- [x] L-4 — run `docz wiki` to generate the `mkdocs.yml` that
       `techdocs-ref: "dir:."` requires (OQ-8a); `.docz.yaml`'s `wiki` block is
       already configured for it (techdocs-core, nav titles, exclusions), so this
       looks like a step that was simply never run. Verify the generated nav
-      covers all six docz types
-- [ ] L-5 — delete CODEOWNERS' "Replace @org/CHANGEME" instruction; the line
+      covers all six docz types — **confirmed**, 26 pages, all six types present
+- [x] L-5 — delete CODEOWNERS' "Replace @org/CHANGEME" instruction; the line
       below it is already correct
-- [ ] L-6 — remove `release.yml`'s duplicate syft install (lines 63-64 and
+- [x] L-6 — remove `release.yml`'s duplicate syft install (lines 63-64 and
       72-73) and the `publish-ghcr` comment describing a `chart` job and "two
       publish workflows" that do not exist here
-- [ ] L-7 — fix `ghcr.yml`'s `ecr.yml` reference and its bare `# $schema=`
+- [x] L-7 — fix `ghcr.yml`'s `ecr.yml` reference and its bare `# $schema=`
       directive (should be `# yaml-language-server: $schema=` pointing at
       `github-workflow.json`, as every other workflow does)
-- [ ] L-8 — fix `.github/labeler.yml`: the duplicate `Makefile` entry, and the
+- [x] L-8 — fix `.github/labeler.yml`: the duplicate `Makefile` entry, and the
       `repo` globs naming `.goreleaser.yaml`, `.prettierrc.yaml`,
       `changelog.yaml` when the real files use `.yml`
-- [ ] L-9 — restore `code-quality` and `testing` to `scripts/labels.sh`'s
+- [x] L-9 — restore `code-quality` and `testing` to `scripts/labels.sh`'s
       colour/description maps, or drop them from `.github/labeler.yml`; they
-      currently get created with the gray `EDEDED` fallback and no description
-- [ ] L-11 — commit `.claude/settings.json` and ignore the rest of `.claude/`
+      currently get created with the gray `EDEDED` fallback and no description.
+      Added to both maps, with descriptions matched to the labels' current live
+      values so a `--force` run is idempotent rather than overwriting them
+- [x] L-11 — commit `.claude/settings.json` and ignore the rest of `.claude/`
       (OQ-9a): add `.claude/*` plus a `!.claude/settings.json` negation to
-      `.gitignore`, replacing the narrow `donald-loop.local.md` rule
+      `.gitignore`, replacing the narrow `donald-loop.local.md` rule. The glob
+      form matters: git cannot re-include a file inside an ignored _directory_,
+      so `.claude/` would have made the negation a no-op
+- [x] **(unplanned)** Fix `.github/labeler.yml`'s `cmd/**.go` and `pkg/**.go`
+      globs. Both packages keep their sources one directory deeper
+      (`cmd/technitium_exporter/main.go`, `pkg/technitium/*.go`), which
+      `dir/**.go` does not match — so changes to the exporter's entry point and
+      its API client were never getting the `go` label. Now `dir/**/*.go`, which
+      matches zero or more intervening segments. Also dropped the
+      `renovate.json` and `.codecov.yaml` globs, alternate spellings of files
+      this repo does not have. Every remaining glob was verified to resolve
+- [x] **(unplanned)** Exclude the generated `mkdocs.yml` from yamllint and
+      yamlfmt. `docz wiki update` writes it with 4-space indent and no document
+      start, and reverts any formatting on the next run — verified by formatting
+      it and re-running docz. Same class of problem as `CHANGELOG.md`, and the
+      same resolution
+- [x] **(unplanned)** Add `just docs-index` and `just docs-wiki` so regenerating
+      the docz index tables and the mkdocs nav is a named step rather than a
+      command someone has to remember
 
 #### Success Criteria
 
 - No file contains an unsubstituted template placeholder or a reference to a
-  path, dependency, or workflow that does not exist in this repo
-- `just lint` still passes
-- `scripts/labels.sh --dry-run` proposes no gray-fallback labels
+  path, dependency, or workflow that does not exist in this repo — **met**;
+  every `.github/labeler.yml` glob was checked to resolve against the tree
+- `just lint` still passes — **met**
+- `scripts/labels.sh --dry-run` proposes no gray-fallback labels — **met**, all
+  17 labels resolve to an explicit colour and description
 
 ---
 
@@ -435,28 +605,47 @@ target.
 
 #### Tasks
 
-- [ ] L-12 — update CLAUDE.md's build-commands section: every `make X` becomes
-      `just X`
-- [ ] L-12 — correct the Go version (documented 1.25.7, actual 1.26.5 per
-      `go.mod`)
-- [ ] L-12 — replace the `test.yml` workflow reference; this branch deletes it
-      in favour of `ci.yml`
-- [ ] L-12 — correct `golang/govulncheck-action@v1` to
+- [x] L-12 — update CLAUDE.md's build-commands section: every `make X` becomes
+      `just X` (done in Phase 5, where the recipes were ported)
+- [x] L-12 — correct the Go version (documented 1.25.7, actual 1.26.5 per
+      `go.mod`) — now 1.26.6, see the security bump below
+- [x] L-12 — replace the `test.yml` workflow reference; this branch deletes it
+      in favour of `ci.yml` (done in Phase 6, alongside the job merge)
+- [x] L-12 — correct `golang/govulncheck-action@v1` to
       `donaldgifford/govulncheck-action@v1` and `trivy-action@0.33.1` to
       `v0.36.0`
-- [ ] Document the Docker workflow in CLAUDE.md — `Dockerfile`,
+- [x] Document the Docker workflow in CLAUDE.md — `Dockerfile`,
       `docker-bake.hcl`, `docker.just`, and the GHCR publish path are entirely
-      undocumented
-- [ ] Document the changelog workflow and whichever tool survives OQ-7
-- [ ] Add a "Task Runner" section explaining `just --list` and the recipe groups
-- [ ] Update INV-0001's status to reflect that remediation has landed
-- [ ] Run `docz update` to refresh the index tables
+      undocumented. Added a Docker section covering the three bake targets, the
+      three-layer version-metadata path, and the `$` vs `$$` trap
+- [x] Document the changelog workflow and whichever tool survives OQ-7 — both
+      survive; the new Changelog section tables which artifact each feeds and
+      records the standing `chore(changelog): sync` requirement
+- [x] Add a "Task Runner" section explaining `just --list` and the recipe groups
+- [x] Update INV-0001's status to reflect that remediation has landed — stays
+      `Concluded` (correct for an investigation) with a note pointing at this
+      doc and naming the four still-open owner-actions
+- [x] Run `docz update` to refresh the index tables
+- [x] **(unplanned)** Bump Go 1.26.5 → 1.26.6 across `mise.toml`, `go.mod`,
+      `Dockerfile`, and CLAUDE.md. `just govulncheck` began failing with exit 3
+      on five stdlib advisories — GO-2026-6218 (`net/url`), GO-2026-6090
+      (`crypto/tls`), GO-2026-6089 and GO-2026-5026 (`net/http`), GO-2026-5972
+      (`encoding/asn1`) — all fixed in 1.26.6, and one with a live call path
+      through `technitium.Client.doRequest`. Not a consequence of this plan; the
+      advisories simply landed mid-flight. Left in rather than deferred because
+      it fails `just ci`
+- [x] **(unplanned)** Fold the `Packaging > Changelog` subsection into the new
+      top-level Changelog section — two headings with the same text, which MD024
+      correctly rejected
 
 #### Success Criteria
 
-- Every command in CLAUDE.md executes successfully as written
-- No reference to `make`, `test.yml`, or Go 1.25.7 survives
-- `docz update --dry-run` reports no drift
+- Every command in CLAUDE.md executes successfully as written — **met**, all 17
+  distinct `just` invocations verified to resolve via `just --show`
+- No reference to `make`, `test.yml`, or Go 1.25.7 survives — **met**
+- `docz update --dry-run` reports no drift — **met**
+- `just ci` green after the Go bump, with `just govulncheck` reporting no
+  vulnerabilities — **met**
 
 ---
 
@@ -496,20 +685,46 @@ target.
 This is a tooling change, so verification is by executing the tooling rather
 than by new Go tests. The Go source is untouched.
 
-- [ ] `just ci` — the composite gate; must pass before merge
-- [ ] `just build && ./build/bin/technitium_exporter --version` — Phase 2 proof
-- [ ] `just docker-build && docker run --rm <image> --version` — Phase 3 proof
-- [ ] `just security`, `just trivy`, `just syft` — Phase 5 proof
-- [ ] `just run-local` with and without credentials set — Phase 5 proof
-- [ ] `git log -S <token> --all` returns empty — Phase 1 proof
-- [ ] Open a throwaway PR to confirm `changelog.yml`, the labeler, and the
+- [x] `just ci` — the composite gate; must pass before merge — **exit 0**
+- [x] `just build && ./build/bin/technitium_exporter --version` — Phase 2 proof
+- [x] `just docker-build && docker run --rm <image> --version` — Phase 3 proof.
+      Image reports `v0.3.0-26-g928bf04 (commit: 928bf04, built: …)`, with the
+      OCI `image.version` / `image.revision` labels matching and the container
+      running as `nonroot:nonroot`
+- [x] `just security`, `just trivy`, `just syft` — Phase 5 proof. All exit 0;
+      trivy reports 0 HIGH/CRITICAL in `go.mod`, syft writes both SBOMs
+- [x] `just run-local` with and without credentials set — Phase 5 proof.
+      Verified **unset only**: the guard fires with instructions and exits 1.
+      The credentials-present path is untested because the token is pending
+      rotation (Phase 1 owner-action) — this is the one item below that a live
+      server would close
+- [ ] `git log -S <token> --all` returns empty — Phase 1 proof. **Not met, as
+      expected.** Three commits still match (`00d895e`, `91bbe98`, `36c092a`),
+      and `git for-each-ref --contains` shows every one of them is reachable
+      _only_ from `refs/remotes/pr/*` — the local mirrors of GitHub's hidden
+      `refs/pull/*`. `main` and every branch are clean; this is the same
+      criterion as Phase 1's third bullet and it closes only when GitHub Support
+      GCs the unreachable objects. Note `--all` is what makes this visible: a
+      plain `git log -S` on the branches returns empty and would have been
+      falsely reassuring
+- [x] Open a throwaway PR to confirm `changelog.yml`, the labeler, and the
       required-labels check all behave — several findings only manifest in a
-      real PR context
-- [ ] Confirm the coverage gate fails when the floor is raised above a real
-      package's coverage
+      real PR context. Done as PR #30 rather than a throwaway, since this branch
+      is the change. All 12 checks pass. The three that could not be verified
+      locally: `Label PR` passes under the new fork guard (same-repo PR takes
+      the allowed branch); `Check Required Labels` passes; and in the merged
+      `Build & Package` job, `Locate archive SBOM` succeeds — it `exit 1`s when
+      the glob matches nothing — with `Upload SBOM scan SARIF` reporting
+      `success` rather than `skipped`, which is what distinguishes a real SARIF
+      upload from the guard swallowing an empty one (H-10)
+- [x] Confirm the coverage gate fails when the floor is raised above a real
+      package's coverage — fails at floor 95 (one package), at 99 (both), on a
+      stale package name, and when `coverage.out` is absent
 
 Regression watch: `just test` must stay green throughout. No phase should change
-`collector/` or `pkg/technitium/`.
+`collector/` or `pkg/technitium/`. **Held**: `just test` green at every commit,
+and `git diff --name-only main...HEAD -- collector/ pkg/technitium/` returns
+zero files.
 
 ## Dependencies
 

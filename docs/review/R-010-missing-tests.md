@@ -11,7 +11,7 @@
 
 Two packages have no test files:
 
-```
+```text
 ?   github.com/donaldgifford/technitium_exporter/config   [no test files]
 ?   github.com/donaldgifford/technitium_exporter/exporter  [no test files]
 ```
