@@ -74,12 +74,15 @@ just ci && just docker-build && \
 
 That sequence is now green. All eight phases' repo-side tasks have landed.
 
-The doc is **In Progress** rather than Completed because four Phase 1
-owner-actions remain open, and they are the consequential ones: the leaked
-Technitium API token has not been rotated, the GitHub Support request to evict
-it from the `refs/pull/*` objects has not been submitted, and the `main`
-repository ruleset is still disabled from the force-push. None of those can be
-done from inside the repo. See Phase 1.
+Phases 2-8 merged as PR #30 on 2026-08-15; `main` is green.
+
+The doc stays **In Progress** rather than Completed on two Phase 1 threads, both
+outside the repo. The GitHub Support request to evict the token from the
+`refs/pull/*` objects was submitted 2026-08-15 and is awaiting confirmation. The
+`main` repository ruleset (id 12379777) is still disabled from the force-push
+and should go back on now that PR #30 has merged. Token rotation is
+**superseded** — the DNS server is being rebuilt, retiring the credential with
+it. See Phase 1.
 
 ## Scope
 
@@ -146,14 +149,20 @@ explicit decision**, not forgotten, and do not block Phases 2-8.
       stale `refs/pull/*` refs
       (`.github/SUPPORT-REQUEST-purge-unreachable-objects.md`)
 - [ ] **[owner]** Revoke the exposed token in the Technitium admin UI and issue
-      a replacement, then store it in a gitignored `.env`
+      a replacement, then store it in a gitignored `.env`. **Superseded**: the
+      DNS server is being rebuilt, which retires the credential with it. Closes
+      when the rebuild lands and a new token goes into `.env`
 - [ ] **[owner]** Confirm the old token is rejected, and audit the DNS server
-      for its use between `00d895e` and revocation
-- [ ] **[owner]** Submit the drafted Support ticket — the force-push alone does
+      for its use between `00d895e` and revocation. The rebuild answers the
+      first half; the audit is only possible against the old server's logs, so
+      do it before decommissioning or accept that it cannot be done
+- [x] **[owner]** Submit the drafted Support ticket — the force-push alone does
       NOT evict the objects; all 18 `refs/pull/N/head` refs still hold them, and
-      no client-side removal is possible
+      no client-side removal is possible — **submitted 2026-08-15**
 - [ ] **[owner]** Re-enable the `main` repository ruleset (id 12379777),
-      disabled to permit the force-push and still `disabled` as of 2026-08-12
+      disabled to permit the force-push and still `disabled` as of 2026-08-15.
+      Now the most pressing of these: PR #30 is merged, so the branch is
+      unprotected with nothing left that needs it open
 - [ ] **[owner]** After Support confirms, verify `00d895e` no longer resolves,
       then delete the drafted ticket and the pre-purge backup bundle in `~` (the
       bundle contains the original credential)
@@ -165,14 +174,20 @@ explicit decision**, not forgotten, and do not block Phases 2-8.
 - No open PR references a pre-rewrite SHA — **met**, all 6 closed and branches
   deleted
 - `gh api "repos/.../contents/Makefile?ref=00d895e"` no longer returns the token
-  — **not met**, and not achievable client-side. This is the criterion that
-  distinguishes a rewritten branch from an actually purged repo; it needs the
-  Support ticket
-- The old token is confirmed rejected by the live server — **not met**, owner
-  action
+  — **pending**, and not achievable client-side. This is the criterion that
+  distinguishes a rewritten branch from an actually purged repo. The Support
+  ticket that closes it went in 2026-08-15; re-check the `gh api` call once they
+  confirm
+- The old token is confirmed rejected by the live server — **superseded**. The
+  Technitium server is being rebuilt, so the credential dies with the instance
+  rather than by revocation. Recorded as a decision, not an oversight: the
+  exposure window still ran from `00d895e` to whenever the rebuild completes
 
-Phase 1 is therefore _complete for everything doable in this repo_ and open on
-four owner-actions. Phases 2-8 proceed independently.
+Phase 1 is therefore _complete for everything doable in this repo_, with the
+Support ticket submitted and awaiting confirmation. The one action still worth
+doing promptly is re-enabling the `main` ruleset — it was disabled only to
+permit the force-push, and nothing needs it open now that PR #30 has merged.
+Phases 2-8 proceeded independently and are complete.
 
 ---
 
