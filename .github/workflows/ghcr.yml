@@ -41,7 +41,14 @@ env:
   IMAGE_REPO: donaldgifford/technitium_exporter
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A literal name, NOT ${{ github.workflow }}: in a workflow invoked via
+  # workflow_call, github.workflow resolves to the CALLER's name, so the
+  # expression form put this run into the same group its parent release.yml
+  # run already held. Parent waited on child, child queued behind parent --
+  # GitHub detected the deadlock and failed every Release run at the
+  # publish-ghcr call (first seen on the PR #30 merge; v0.3.1's image never
+  # published).
+  group: publish-ghcr-${{ github.ref }}
   # No cancellation: this workflow pushes container images to the registry;
   # cancelling mid-run leaves a partial manifest list.
   cancel-in-progress: false
